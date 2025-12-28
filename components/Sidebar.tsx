@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { Home, MapPin, Wallet, Zap, Clock, ThumbsUp, ShoppingBag, Bookmark } from 'lucide-react';
+import { Home, MapPin, Wallet, Zap, Clock, ThumbsUp, ShoppingBag, Bookmark, LayoutDashboard } from 'lucide-react';
 import { Tab } from '../types';
 
 interface SidebarProps {
@@ -14,6 +14,7 @@ const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
     { id: 'nearby', label: 'Nearby', icon: MapPin },
     { id: 'wallet', label: 'My wallet', icon: Wallet },
     { id: 'updates', label: 'Updates', icon: Zap },
+    { id: 'merchant', label: 'Merchant Portal', icon: LayoutDashboard },
   ] as const;
 
   const secondaryLinks = [

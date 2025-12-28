@@ -6,6 +6,7 @@ import { Layout } from './components';
 import HomeView from './views/HomeView';
 import ProfileView from './views/ProfileView';
 import VideoPlayerView from './views/VideoPlayerView';
+import MerchantPortalView from './views/MerchantPortalView';
 import CreateModal from './components/CreateModal';
 import { MOCK_VIDEOS } from './constants';
 import { Tab, Category, VideoAd } from './types';
@@ -96,9 +97,11 @@ const App = () => {
           />
         )}
 
+        {activeTab === 'merchant' && <MerchantPortalView />}
+
         {activeTab === 'nearby' && (
           <div className="max-w-4xl mx-auto p-8 text-center pt-10">
-            <h2 className="text-zinc-900 dark:text-white text-4xl font-black mb-4 tracking-tighter uppercase italic font-heading">Happening Nearby</h2>
+            <h2 className="text-zinc-900 dark:text-white text-4xl font-black mb-4 tracking-tighter uppercase font-heading">Happening Nearby</h2>
             <p className="text-zinc-500 text-lg font-medium font-body mb-10">Local drops and events in your area.</p>
             <div className="bg-zinc-100 dark:bg-zinc-900/50 rounded-[40px] aspect-[16/10] md:aspect-[21/9] border-2 border-zinc-200 dark:border-zinc-800 flex items-center justify-center relative overflow-hidden group">
                <div className="absolute inset-0 opacity-20 grayscale bg-[url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1200&q=80')] bg-cover bg-center"></div>
@@ -119,7 +122,7 @@ const App = () => {
               <div className="bg-gradient-to-br from-accent to-[#faa307] p-8 rounded-[32px] text-left text-black shadow-2xl relative overflow-hidden group cursor-pointer border-2 border-white/20">
                 <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/20 rounded-full blur-3xl group-hover:bg-white/30 transition-all duration-700" />
                 <Wallet size={36} strokeWidth={3} className="mb-6" />
-                <h3 className="text-2xl font-black uppercase italic font-heading">VIP Drop Pass</h3>
+                <h3 className="text-2xl font-black uppercase font-heading">VIP Drop Pass</h3>
                 <p className="text-black/70 text-sm mt-2 font-bold">Nike Phantom Series • NYC Pop-up</p>
                 <div className="mt-8 flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest bg-black/10 px-3 py-1 rounded-full">Expires in 2h</span>
@@ -129,7 +132,7 @@ const App = () => {
               
               <div className="bg-white dark:bg-zinc-900 p-8 rounded-[32px] text-left border-2 border-zinc-200 dark:border-zinc-800 shadow-xl group cursor-pointer hover:border-accent transition-colors">
                 <Zap size={36} strokeWidth={3} className="mb-6 text-accent" />
-                <h3 className="text-2xl font-black uppercase italic font-heading dark:text-white">20% Off Sony</h3>
+                <h3 className="text-2xl font-black uppercase font-heading dark:text-white">20% Off Sony</h3>
                 <p className="text-zinc-500 text-sm mt-2 font-bold">Valid at all authorized retailers</p>
                 <div className="mt-8 flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full text-zinc-500">Global Code</span>
@@ -143,7 +146,7 @@ const App = () => {
         {activeTab === 'updates' && (
           <div className="max-w-4xl mx-auto p-8 pt-10">
              <div className="flex items-center justify-between mb-8">
-              <h2 className="text-zinc-900 dark:text-white text-3xl font-black tracking-tighter uppercase font-heading italic">Direct Signal</h2>
+              <h2 className="text-zinc-900 dark:text-white text-3xl font-black tracking-tighter uppercase font-heading">Direct Signal</h2>
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 bg-accent rounded-full animate-pulse"></span>
                 <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Live Updates</span>

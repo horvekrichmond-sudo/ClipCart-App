@@ -30,11 +30,14 @@ const HomeView = ({ videos, selectedCategory, onReset, onVideoClick }: HomeViewP
 
   return (
     /* 
-       Elastic Grid: 
-       Using grid-cols with auto-fill and minmax allows the grid to decide the optimal 
-       number of columns based on the container size, preventing "wrapping under" issues.
+       Elastic Grid Update: 
+       Enforcing exactly 3 columns on large screens (lg and above).
+       - Mobile: 1 column (full width)
+       - Tablet/Small Desktop: 2 columns
+       - Desktop/Ultrawide: 3 columns
+       This keeps thumbnails prominent and immersive even on 4K displays.
     */
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-x-6 gap-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 w-full">
       {videos.map(video => (
         <VideoCard key={video.id} ad={video} onClick={onVideoClick} />
       ))}

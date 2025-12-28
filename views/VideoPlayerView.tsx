@@ -1,9 +1,10 @@
+
 import * as React from 'react';
 import { 
   Share2, MoreHorizontal, CheckCircle2, 
-  Bookmark, Wallet, Sparkles, Plus, Check, X,
+  Bookmark, Wallet, Sparkles, Check, X,
   Star, MessageCircle, Copy, MapPin, Calendar, 
-  Cpu, ChevronDown, Info, ShieldCheck
+  Cpu, ChevronDown, Info, ShieldCheck, Plus
 } from 'lucide-react';
 import { VideoAd } from '../types';
 import { useTimer } from '../hooks/useTimer';
@@ -22,6 +23,9 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
   const [showToast, setShowToast] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
+  const [popDirection, setPopDirection] = React.useState<'up' | 'down'>('down');
+  
+  const moreButtonRef = React.useRef<HTMLButtonElement>(null);
   const timer = useTimer(video.timeLeft);
 
   const handleTrackToggle = () => {
@@ -38,13 +42,20 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Standard height and padding class for all primary commerce buttons
+  const toggleMoreMenu = () => {
+    if (!isMoreMenuOpen && moreButtonRef.current) {
+      const rect = moreButtonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setPopDirection(spaceBelow < 320 ? 'up' : 'down');
+    }
+    setIsMoreMenuOpen(!isMoreMenuOpen);
+  };
+
   const buttonBaseClass = "flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm font-heading transition-all active:scale-95 whitespace-nowrap border h-[40px] flex-shrink-0";
 
   return (
     <div className="w-full animate-in fade-in duration-500 relative bg-white dark:bg-yt-dark min-h-screen">
       
-      {/* COMMERCE TOAST */}
       {showToast && (
         <div className="fixed bottom-20 md:bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 fade-in duration-300">
           <div className="bg-yt-textLight dark:bg-yt-textDark text-yt-light dark:text-yt-dark px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-white/10">
@@ -57,10 +68,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
       )}
 
       <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
-        
-        {/* LEFT COLUMN: Fluid Main Player & Commerce Info */}
         <div className="flex-1 min-w-0">
-          {/* Video Player */}
           <div className="sticky top-0 z-40 sm:relative aspect-video bg-black sm:rounded-2xl overflow-hidden shadow-2xl border-b sm:border border-zinc-200 dark:border-zinc-800 group">
             <video 
               key={video.videoUrl}
@@ -72,8 +80,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
             />
           </div>
 
-          <div className="mt-4 px-4 md:px-0 relative z-10 bg-white dark:bg-yt-dark">
-            {/* Title & Trust Signals */}
+          <div className="mt-4 px-4 md:px-0 relative bg-white dark:bg-yt-dark">
             <div className="flex flex-col gap-1">
               <h1 className="text-xl md:text-2xl font-bold text-yt-textLight dark:text-yt-textDark leading-tight tracking-tight font-heading">
                 {video.title}
@@ -85,14 +92,12 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               </div>
             </div>
 
-            {/* Brand Header & Primary CTA */}
-            <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-6">
-              {/* Brand Info & Track Button: No Wrap */}
-              <div className="flex items-center gap-4 flex-shrink-0">
+            <div className={`mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-6 relative ${isMoreMenuOpen ? 'z-[60]' : 'z-auto'}`}>
+              <div className="flex items-center gap-4 flex-shrink-0 min-w-fit">
                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-accent bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 shadow-lg shadow-accent/10">
                   <img src={video.brand.logo} alt={video.brand.name} className="w-full h-full object-cover" />
                 </div>
-                <div className="flex flex-col min-w-0 mr-2">
+                <div className="flex flex-col min-w-0 mr-2 max-w-[120px] sm:max-w-none">
                   <div className="flex items-center gap-1.5">
                     <span className="text-yt-textLight dark:text-yt-textDark font-black text-lg font-heading tracking-tight truncate">{video.brand.name}</span>
                     <CheckCircle2 size={16} strokeWidth={3} className="text-accent flex-shrink-0" />
@@ -105,44 +110,35 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                   </div>
                 </div>
                 
-                {/* Track Brand: No Icon, Never Wraps */}
                 <button 
                   onClick={handleTrackToggle}
-                  className={`${buttonBaseClass} border-transparent uppercase tracking-wider px-6 flex-shrink-0 ${
+                  className={`${buttonBaseClass} border-transparent uppercase tracking-wider px-6 flex-shrink-0 whitespace-nowrap overflow-hidden ${
                     isTracked 
                     ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500' 
                     : 'bg-yt-textLight dark:bg-yt-textDark text-yt-light dark:text-yt-dark hover:bg-accent hover:text-black shadow-md'
                   }`}
                 >
-                  {isTracked && <Wallet size={14} strokeWidth={3} />}
                   <span>{isTracked ? 'Tracked' : 'Track Brand'}</span>
                 </button>
               </div>
 
-              {/* COMMERCE ACTIONS: YouTube-style responsive overflow */}
               <div className="flex items-center gap-2 relative">
-                {/* Visible on Mobile (Scroll) | Specific visibility on Desktop */}
                 <div className="flex items-center gap-2 overflow-x-auto md:overflow-visible scrollbar-hide pb-2 md:pb-0">
-                  
-                  {/* Rate: Always visible */}
                   <button className={`${buttonBaseClass} bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
                     <Star size={18} strokeWidth={2.5} className="text-accent" />
                     <span>Rate</span>
                   </button>
 
-                  {/* Ask: Hidden on smaller desktop widths */}
                   <button className={`${buttonBaseClass} hidden xl:flex bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
                     <MessageCircle size={18} strokeWidth={2.5} />
                     <span>Ask</span>
                   </button>
 
-                  {/* Send Deal: Hidden on smaller desktop widths */}
                   <button className={`${buttonBaseClass} hidden 2xl:flex bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
                     <Share2 size={18} strokeWidth={2.5} />
                     <span>Send Deal</span>
                   </button>
 
-                  {/* Save Deal: Hidden on smaller desktop widths */}
                   <button 
                     onClick={() => setIsClipped(!isClipped)}
                     className={`${buttonBaseClass} hidden 2xl:flex ${
@@ -155,10 +151,10 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                     <span>{isClipped ? 'Clipped' : 'Save Deal'}</span>
                   </button>
 
-                  {/* More Button: Popout */}
                   <div className="relative">
                     <button 
-                      onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                      ref={moreButtonRef}
+                      onClick={toggleMoreMenu}
                       className="flex items-center justify-center w-10 h-10 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all border border-zinc-200 dark:border-zinc-800"
                     >
                       <MoreHorizontal size={18} strokeWidth={2.5} />
@@ -166,9 +162,10 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
 
                     {isMoreMenuOpen && (
                       <>
-                        <div className="fixed inset-0 z-40" onClick={() => setIsMoreMenuOpen(false)} />
-                        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
-                          {/* These items show in menu only when hidden in bar */}
+                        <div className="fixed inset-0 z-[70] bg-black/5 backdrop-blur-[1px] md:bg-transparent" onClick={() => setIsMoreMenuOpen(false)} />
+                        <div className={`absolute right-0 w-64 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-[80] py-2 animate-in fade-in zoom-in-95 duration-200 
+                          ${popDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'}`}>
+                          
                           <button className="xl:hidden w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading">
                             <MessageCircle size={18} /> Ask Merchant
                           </button>
@@ -176,12 +173,12 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                             <Share2 size={18} /> Send Deal
                           </button>
                           <button 
-                            onClick={() => setIsClipped(!isClipped)}
+                            onClick={() => { setIsClipped(!isClipped); setIsMoreMenuOpen(false); }}
                             className="2xl:hidden w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading"
                           >
                             <Bookmark size={18} fill={isClipped ? "currentColor" : "none"} /> {isClipped ? 'Clipped' : 'Save Deal'}
                           </button>
-                          <div className="hidden xl:block 2xl:hidden h-px bg-zinc-100 dark:bg-zinc-800 my-1 mx-3" />
+                          <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1 mx-3" />
                           <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading">
                             <Info size={18} /> Campaign Info
                           </button>
@@ -196,7 +193,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               </div>
             </div>
 
-            {/* DYNAMIC COMMERCE CARDS */}
             <div className="mt-8 space-y-4">
               {(video.category === 'Flash Deals' || video.hasCoupon) && (
                 <div className="bg-gradient-to-r from-accent/20 to-transparent p-6 rounded-3xl border-l-4 border-accent">
@@ -206,7 +202,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                         <Sparkles size={24} strokeWidth={3} />
                       </div>
                       <div>
-                        <h3 className="text-lg font-black uppercase italic font-heading tracking-tight">Active Promo: 20% OFF</h3>
+                        <h3 className="text-lg font-black uppercase font-heading tracking-tight">Active Promo: 20% OFF</h3>
                         <p className="text-sm font-bold text-zinc-500 tabular-nums">Claim within {timer} • One per user</p>
                       </div>
                     </div>
@@ -231,7 +227,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                         <MapPin size={24} strokeWidth={3} />
                       </div>
                       <div>
-                        <h3 className="text-lg font-black uppercase italic font-heading tracking-tight">Near You: {video.location}</h3>
+                        <h3 className="text-lg font-black uppercase font-heading tracking-tight">Near You: {video.location}</h3>
                         <p className="text-sm font-bold text-zinc-500">Available for in-person demo today</p>
                       </div>
                     </div>
@@ -251,7 +247,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                 <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800">
                    <div className="flex items-center gap-3 mb-4">
                       <Cpu size={20} className="text-accent" strokeWidth={3} />
-                      <h3 className="font-black uppercase italic font-heading tracking-wider">Technical Specifications</h3>
+                      <h3 className="font-black uppercase font-heading tracking-wider">Technical Specifications</h3>
                    </div>
                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                       {video.specs.map(spec => (
@@ -301,7 +297,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Elastic Related Content Sidebar */}
         <div className="w-full lg:w-[400px] xl:w-[450px] flex-shrink-0 flex flex-col gap-6 px-4 md:px-0 mt-4 lg:mt-0 relative z-10 bg-white dark:bg-yt-dark">
           <div className="flex flex-col gap-4">
             <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 px-2">Related Signals</h4>

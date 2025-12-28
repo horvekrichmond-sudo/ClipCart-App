@@ -48,16 +48,16 @@ const Layout = ({
       <div className="flex flex-grow relative overflow-hidden">
         {/* 
            Desktop Sidebar: Fixed width to provide stability,
-           but only visible on screens wider than md (768px).
+           Synchronized with h-16 header (top-16).
         */}
         {!isVideoView && (
-          <div className="hidden md:block fixed top-14 left-0 bottom-0 w-64 border-r border-zinc-200 dark:border-zinc-900 bg-white dark:bg-zinc-950 z-40">
+          <div className="hidden md:block fixed top-16 left-0 bottom-0 w-64 border-r border-zinc-200 dark:border-zinc-900 bg-white dark:bg-zinc-950 z-40">
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
           </div>
         )}
 
         {/* 
-           Mobile/Overlay Sidebar: Strictly for smaller screens or special interactions.
+           Mobile/Overlay Sidebar
         */}
         {isSidebarOpen && (
           <>
@@ -79,12 +79,11 @@ const Layout = ({
 
         {/* 
            Elastic Main Content: 
-           Uses fluid left padding on desktop to account for the sidebar.
-           On Video View, it becomes a center-focused fluid container.
+           Updated pt-16 to match new header height.
         */}
         <main 
           className={`flex-grow overflow-y-auto custom-scrollbar transition-all duration-300 
-            ${!isVideoView ? 'md:pl-64 pt-14' : 'pt-0 md:pt-14'} 
+            ${!isVideoView ? 'md:pl-64 pt-16' : 'pt-0 md:pt-16'} 
             ${!isVideoView ? 'pb-24 md:pb-10' : 'pb-10'}`}
         >
           {!isVideoView && (
@@ -96,10 +95,6 @@ const Layout = ({
             </div>
           )}
           
-          {/* 
-              Fluid Container: Uses max-w-[100%] but caps it at 2400px for ultra-wide monitors.
-              The 'elasticity' comes from padding and auto-margins.
-          */}
           <div className={`w-full mx-auto ${isVideoView ? 'max-w-[1800px]' : 'max-w-[2400px]'}`}>
             <div className={`${isVideoView ? 'px-0 md:px-6' : 'px-4 md:px-8'} ${!isVideoView ? 'pt-6' : 'pt-0 md:pt-4'}`}>
               {children}

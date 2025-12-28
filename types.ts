@@ -20,7 +20,7 @@ export interface VideoAd {
     logo: string;
   };
   thumbnail: string;
-  videoUrl: string; // Added for real video playback
+  videoUrl: string; 
   duration: string;
   category: string;
   style: ContentStyle;
@@ -39,4 +39,17 @@ export interface VideoAd {
   };
 }
 
-export type Tab = 'home' | 'nearby' | 'wallet' | 'updates' | 'profile' | 'video-player';
+export type CampaignStatus = 'Active' | 'Draft' | 'Expired' | 'Sold Out';
+
+export interface MerchantCampaign {
+  id: string;
+  title: string;
+  type: string;
+  status: CampaignStatus;
+  views: string;
+  clips: string;
+  ctr: string;
+  spend: string;
+}
+
+export type Tab = 'home' | 'nearby' | 'wallet' | 'updates' | 'profile' | 'video-player' | 'merchant';

@@ -38,18 +38,18 @@ const Header = ({ onMenuClick, onLogoClick, onCreateClick }: HeaderProps) => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-yt-dark border-b border-zinc-200 dark:border-zinc-800 safe-top transition-colors duration-300">
-      <div className="flex items-center justify-between px-4 h-14 md:px-6">
+      <div className="flex items-center justify-between px-4 h-16 md:px-6">
         {/* Left: Brand */}
         <div className="flex items-center gap-4 min-w-[140px] md:min-w-[180px]">
           <button 
             onClick={onMenuClick}
             className="p-2 -ml-2 text-yt-textLight dark:text-yt-textDark hover:opacity-70 transition-colors"
           >
-            <Menu size={22} strokeWidth={2.5} />
+            <Menu size={24} strokeWidth={2.5} />
           </button>
           <h1 
             onClick={onLogoClick}
-            className="text-xl font-bold tracking-tighter text-yt-textLight dark:text-yt-textDark flex items-center gap-0.5 cursor-pointer font-heading select-none active:scale-95 transition-transform"
+            className="text-2xl font-bold tracking-tighter text-yt-textLight dark:text-yt-textDark flex items-center gap-0.5 cursor-pointer font-heading select-none active:scale-95 transition-transform"
           >
             <span className="text-accent">Clip</span>Cart
           </h1>
@@ -57,18 +57,18 @@ const Header = ({ onMenuClick, onLogoClick, onCreateClick }: HeaderProps) => {
 
         {/* Center: Search (YouTube Style) - Desktop Only */}
         <div className="hidden md:flex flex-grow max-w-[720px] mx-8 items-center gap-4">
-          <div className="flex flex-grow bg-white dark:bg-black rounded-full border border-zinc-200 dark:border-zinc-800 overflow-hidden focus-within:ring-2 focus-within:ring-accent/30 transition-all shadow-sm">
+          <div className="flex flex-grow bg-white dark:bg-black rounded-full border border-zinc-200 dark:border-zinc-800 overflow-hidden focus-within:ring-2 focus-within:ring-accent/30 transition-all shadow-sm h-10">
             <input 
               type="text" 
               placeholder="Search commerce, events, deals..." 
               className="w-full bg-transparent px-5 py-2 text-sm focus:outline-none dark:text-white"
             />
-            <button className="bg-zinc-50 dark:bg-zinc-900 px-5 border-l border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-              <Search className="text-zinc-500 dark:text-zinc-400" size={18} strokeWidth={2.5} />
+            <button className="bg-zinc-50 dark:bg-zinc-900 px-6 border-l border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+              <Search className="text-zinc-500 dark:text-zinc-400" size={20} strokeWidth={2.5} />
             </button>
           </div>
           <button className="p-2.5 bg-zinc-100 dark:bg-zinc-900 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all text-zinc-700 dark:text-zinc-300">
-            <Mic size={18} strokeWidth={2.5} />
+            <Mic size={20} strokeWidth={2.5} />
           </button>
         </div>
         
@@ -89,21 +89,21 @@ const Header = ({ onMenuClick, onLogoClick, onCreateClick }: HeaderProps) => {
           {/* Desktop Only Create Button */}
           <button 
             onClick={onCreateClick}
-            className="hidden md:flex items-center gap-2 text-yt-textLight dark:text-yt-textDark hover:bg-zinc-100 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-full transition-colors font-bold text-sm"
+            className="hidden md:flex items-center gap-2 text-yt-textLight dark:text-yt-textDark hover:bg-zinc-100 dark:hover:bg-zinc-800 px-4 py-2 rounded-full transition-colors font-bold text-sm"
           >
             <Plus size={22} strokeWidth={2.5} />
             <span className="hidden lg:inline">Create</span>
           </button>
 
           <button className="text-yt-textLight dark:text-yt-textDark hover:text-accent transition-colors relative p-2">
-            <Bell size={22} strokeWidth={2.5} />
+            <Bell size={24} strokeWidth={2.5} />
             <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-accent rounded-full border-2 border-white dark:border-yt-dark"></span>
           </button>
 
           <div className="relative ml-1 hidden md:block">
             <div 
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-black cursor-pointer hover:opacity-90 transition-all shadow-lg select-none overflow-hidden border-2 border-accent"
+              className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-black cursor-pointer hover:opacity-90 transition-all shadow-lg select-none overflow-hidden border-2 border-accent"
             >
               <img src="https://picsum.photos/id/64/100/100" alt="JD" className="w-full h-full object-cover" />
             </div>
@@ -111,7 +111,7 @@ const Header = ({ onMenuClick, onLogoClick, onCreateClick }: HeaderProps) => {
             {isProfileOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
-                <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+                <div className="absolute top-full right-0 mt-3 w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
                   <div className="p-5 flex items-center gap-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20">
                     <div className="w-12 h-12 rounded-full bg-accent flex-shrink-0 overflow-hidden border-2 border-accent shadow-sm">
                       <img src="https://picsum.photos/id/64/100/100" alt="" className="w-full h-full object-cover" />
