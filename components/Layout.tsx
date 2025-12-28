@@ -6,7 +6,9 @@ import CategoryBar from './CategoryBar';
 import { Tab, Category } from '../types';
 
 interface LayoutProps {
-  children: React.ReactNode;
+  // Marked children as optional to prevent TypeScript from throwing an error
+  // when the content inside the Layout component is conditionally rendered.
+  children?: React.ReactNode;
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
   selectedCategory: Category;
