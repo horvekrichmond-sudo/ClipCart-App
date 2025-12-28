@@ -3,7 +3,7 @@ import {
   X, TrendingUp, ShoppingCart, GraduationCap, Users, Target, Briefcase, Bell, UserCheck, 
   Upload, ChevronRight, MapPin, DollarSign, Tag, Globe, CheckCircle2, Plus, HelpCircle, 
   Copy, MessageSquare, Info, ShieldCheck, Monitor, Image as ImageIcon, ArrowUp, AlertCircle,
-  ChevronDown, Edit2
+  ChevronDown, Edit2, Check
 } from 'lucide-react';
 
 interface CreateModalProps {
@@ -13,6 +13,7 @@ interface CreateModalProps {
 
 type Step = 'Details' | 'Merchant Logic' | 'Checks' | 'Visibility';
 type Stage = 'selection' | 'upload' | 'form';
+type QualityStatus = 'pending' | 'processing' | 'done' | 'na';
 
 const INDUSTRIES = [
   'Fashion & Luxury', 'Consumer Tech', 'Automotive', 
@@ -33,12 +34,17 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
   const [isIndustryOpen, setIsIndustryOpen] = React.useState(false);
   const [popoverDirection, setPopoverDirection] = React.useState<'up' | 'down'>('down');
   
-  // Upload State
+  // Upload & Quality State
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [videoSrc, setVideoSrc] = React.useState<string | null>(null);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
   const [isValidating, setIsValidating] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState(0);
+  
+  const [qualityInfo, setQualityInfo] = React.useState({ sd: true, hd: false, v4k: false });
+  const [sdStatus, setSdStatus] = React.useState<QualityStatus>('pending');
+  const [hdStatus, setHdStatus] = React.useState<QualityStatus>('pending');
+  const [v4kStatus, setV4kStatus] = React.useState<QualityStatus>('pending');
   
   // Thumbnail State
   const [thumbnailSrc, setThumbnailSrc] = React.useState<string | null>(null);
@@ -55,15 +61,40 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     }
   }, [selectedFile]);
 
-  // Simulate upload progress
+  // Simulate upload and then processing
   React.useEffect(() => {
-    if (modalStage === 'form' && uploadProgress < 100) {
-      const interval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 1, 100));
-      }, 50);
-      return () => clearInterval(interval);
+    if (modalStage === 'form') {
+      if (uploadProgress < 100) {
+        const interval = setInterval(() => {
+          setUploadProgress(prev => Math.min(prev + 1, 100));
+        }, 40);
+        return () => clearInterval(interval);
+      } else {
+        // Start Processing Simulation
+        const runProcessing = async () => {
+          // Process SD
+          setSdStatus('processing');
+          await new Promise(r => setTimeout(r, 2000));
+          setSdStatus('done');
+
+          // Process HD if applicable
+          if (qualityInfo.hd) {
+            setHdStatus('processing');
+            await new Promise(r => setTimeout(r, 3000));
+            setHdStatus('done');
+          }
+
+          // Process 4K if applicable
+          if (qualityInfo.v4k) {
+            setV4kStatus('processing');
+            await new Promise(r => setTimeout(r, 4000));
+            setV4kStatus('done');
+          }
+        };
+        runProcessing();
+      }
     }
-  }, [modalStage, uploadProgress]);
+  }, [modalStage, uploadProgress, qualityInfo]);
 
   if (!isOpen) return null;
 
@@ -92,6 +123,9 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     setTitle('');
     setDescription('');
     setSelectedIndustry(null);
+    setSdStatus('pending');
+    setHdStatus('pending');
+    setV4kStatus('pending');
     onClose();
   };
 
@@ -105,7 +139,9 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     const objectUrl = URL.createObjectURL(file);
     video.onloadedmetadata = () => {
       const duration = video.duration;
-      const aspectRatio = video.videoWidth / video.videoHeight;
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      const aspectRatio = width / height;
       const is16by9 = Math.abs(aspectRatio - (16/9)) < 0.05;
 
       if (duration > 900) {
@@ -115,6 +151,13 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
         setUploadError('Incorrect aspect ratio');
         setIsValidating(false);
       } else {
+        // Smart Quality Detection
+        setQualityInfo({
+          sd: true,
+          hd: width >= 1280 || height >= 720,
+          v4k: width >= 3840 || height >= 2160
+        });
+
         setSelectedFile(file);
         setVideoSrc(objectUrl);
         setModalStage('form');
@@ -144,208 +187,33 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
 
   const isNextDisabled = currentStep === 'Details' && (!thumbnailSrc || title.trim() === '');
 
-  const renderSelection = () => (
-    <div className="flex flex-col items-center justify-center h-full max-w-5xl mx-auto px-6 py-8 animate-in fade-in zoom-in-95 duration-300">
-      <div className="text-center mb-10">
-        <h2 className="text-2xl font-bold font-heading mb-2 tracking-tight">Choose Campaign Type</h2>
-        <p className="text-zinc-500 text-sm font-medium">Select a commerce module to power your video signal.</p>
+  // Quality Badge Component
+  const QualityBadge = ({ label, status, available }: { label: string; status: QualityStatus; available: boolean }) => {
+    if (!available) return null;
+    
+    let baseStyles = "w-6 h-5 rounded flex items-center justify-center text-[9px] font-black transition-all duration-500 border ";
+    let content = label;
+
+    switch (status) {
+      case 'pending':
+        baseStyles += "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent opacity-40";
+        break;
+      case 'processing':
+        baseStyles += "bg-accent/10 text-accent border-accent/30 animate-pulse scale-105";
+        break;
+      case 'done':
+        baseStyles += "bg-green-500 text-white border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]";
+        content = <Check size={10} strokeWidth={4} />;
+        break;
+    }
+
+    return (
+      <div className="flex flex-col items-center gap-0.5">
+        <div className={baseStyles}>{content}</div>
+        <span className="text-[7px] font-black text-zinc-500 uppercase tracking-tighter">{label}</span>
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-        {createOptions.map((opt) => (
-          <button
-            key={opt.id}
-            onClick={() => { setSelectedType(opt.id); setModalStage('upload'); }}
-            className="flex flex-col items-center p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:border-accent hover:bg-accent/5 transition-all group"
-          >
-            <div className="mb-4 text-zinc-400 group-hover:text-accent transition-colors"><opt.icon className="w-8 h-8" /></div>
-            <h3 className="text-xs font-bold font-heading text-center mb-1">{opt.name}</h3>
-            <p className="text-[10px] text-zinc-500 text-center font-medium leading-relaxed">{opt.desc}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderInitialUpload = () => (
-    <div className="flex flex-col items-center justify-center h-full py-16 animate-in fade-in duration-300">
-      <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/*" className="hidden" />
-      <div onClick={() => fileInputRef.current?.click()} className="w-32 h-32 bg-zinc-50 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-8 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border-2 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 group">
-        <ArrowUp size={48} className={`${isValidating ? "text-accent animate-bounce" : "text-zinc-400 group-hover:text-zinc-600"} transition-colors`} />
-      </div>
-      <h3 className="text-lg font-medium mb-1">Drag and drop video files to upload</h3>
-      <p className="text-xs text-zinc-500 mb-8 font-medium">Your videos will be private until you publish them.</p>
-      {uploadError && (
-        <div className="mb-6 flex items-center gap-2 text-red-500 text-sm font-bold animate-in slide-in-from-top-2">
-          <AlertCircle size={16} /><span>{uploadError}</span>
-        </div>
-      )}
-      <button onClick={() => fileInputRef.current?.click()} disabled={isValidating} className={`px-8 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-sm font-bold text-sm uppercase transition-all active:scale-95 shadow-lg ${isValidating ? 'opacity-50' : ''}`}>
-        {isValidating ? 'Validating...' : 'Select files'}
-      </button>
-    </div>
-  );
-
-  const renderDetails = () => (
-    <div className="flex flex-col lg:flex-row gap-8">
-      <div className="flex-grow space-y-8 pb-10">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold font-heading">Details</h2>
-          <button className="px-4 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700">Reuse details</button>
-        </div>
-
-        {/* Title Input */}
-        <div className="group relative">
-          <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-            Title (required) <HelpCircle size={12} className="cursor-help" />
-          </div>
-          <textarea 
-            placeholder="Describe your campaign..."
-            rows={2}
-            maxLength={100}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full pt-8 pb-3 px-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:border-accent focus:ring-2 focus:ring-accent outline-none transition-all resize-none font-medium"
-          />
-          <div className={`absolute bottom-2 right-3 text-[10px] font-bold ${title.length >= 100 ? 'text-red-500' : 'text-zinc-400'}`}>
-            {title.length}/100
-          </div>
-        </div>
-
-        {/* Description Input */}
-        <div className="group relative">
-          <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-            Description <HelpCircle size={12} className="cursor-help" />
-          </div>
-          <textarea 
-            placeholder="Tell viewers about your brand..."
-            rows={5}
-            maxLength={2000}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full pt-8 pb-3 px-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:border-accent focus:ring-2 focus:ring-accent outline-none transition-all resize-none font-medium"
-          />
-          <div className={`absolute bottom-2 right-3 text-[10px] font-bold ${description.length >= 2000 ? 'text-red-500' : 'text-zinc-400'}`}>
-            {description.length}/2000
-          </div>
-        </div>
-
-        {/* Thumbnail Selection */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold">Thumbnail <span className="text-red-500">*</span></h3>
-            <HelpCircle size={14} className="text-zinc-400" />
-          </div>
-          <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">Select or upload a high-impact cover for your video. A thumbnail is required to proceed.</p>
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-            <input type="file" ref={thumbInputRef} className="hidden" accept="image/*" onChange={handleThumbnailChange} />
-            <button 
-              onClick={() => thumbInputRef.current?.click()}
-              className="aspect-video border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-accent transition-all group relative overflow-hidden"
-            >
-              {thumbnailSrc ? (
-                <>
-                  <img src={thumbnailSrc} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <Edit2 size={16} className="text-white" />
-                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">Change</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <ImageIcon className="text-zinc-400 group-hover:text-accent" size={20} />
-                  <span className="text-[10px] font-bold text-zinc-500 group-hover:text-accent">Upload file</span>
-                </>
-              )}
-            </button>
-            <div className="aspect-video bg-zinc-100 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 text-zinc-400">
-               <Monitor size={20} /><span className="text-[10px] font-bold">Auto-gen</span>
-            </div>
-            <div className="aspect-video bg-zinc-100 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 text-zinc-400">
-               <Monitor size={20} /><span className="text-[10px] font-bold">Test & Win</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Custom Industry Popover */}
-        <div className="space-y-3 relative">
-          <h3 className="text-sm font-bold">Industry Category</h3>
-          <div className="relative">
-            <button 
-              ref={industryBtnRef}
-              onClick={toggleIndustry}
-              className="w-full max-w-sm flex items-center justify-between p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm font-bold focus:border-accent transition-all group"
-            >
-              <span className={selectedIndustry ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}>
-                {selectedIndustry || 'Select Category'}
-              </span>
-              <ChevronDown size={18} className={`text-zinc-400 transition-transform ${isIndustryOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isIndustryOpen && (
-              <>
-                <div className="fixed inset-0 z-[80]" onClick={() => setIsIndustryOpen(false)} />
-                <div 
-                  className={`absolute left-0 w-[480px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-[90] p-4 animate-in fade-in zoom-in-95 duration-200 
-                  ${popoverDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'}`}
-                >
-                  <div className="grid grid-cols-3 gap-2">
-                    {INDUSTRIES.map(ind => (
-                      <button 
-                        key={ind}
-                        onClick={() => { setSelectedIndustry(ind); setIsIndustryOpen(false); }}
-                        className={`text-left px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                          selectedIndustry === ind 
-                            ? 'bg-accent text-black' 
-                            : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-                        }`}
-                      >
-                        {ind}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full lg:w-96 flex-shrink-0">
-        <div className="sticky top-0 bg-zinc-50 dark:bg-zinc-900/30 rounded-xl overflow-hidden border border-zinc-100 dark:border-zinc-800 shadow-sm">
-          <div className="aspect-video bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center relative">
-            {videoSrc ? (
-              <video src={videoSrc} className="w-full h-full object-contain" controls={uploadProgress === 100} />
-            ) : (
-              <div className="text-xs font-bold text-zinc-500 flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-4 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />Processing...
-              </div>
-            )}
-            {uploadProgress < 100 && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-white text-lg font-black">{uploadProgress}%</div>
-                  <div className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Uploading</div>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="p-4 space-y-4">
-            <div>
-              <div className="text-[10px] font-bold text-zinc-500 mb-1">Video link</div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-blue-500 truncate">https://clipcart.io/v/aHjHI0w</span>
-                <Copy size={16} className="text-zinc-400 hover:text-zinc-600 cursor-pointer" />
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-zinc-500 mb-1">Filename</div>
-              <div className="text-xs font-bold truncate">{selectedFile?.name || 'signal.mp4'}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const createOptions = [
     { id: 'flash', name: 'Flash Deal', desc: 'Live countdown for limited offers', icon: TrendingUp },
@@ -394,20 +262,235 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
         )}
 
         <div ref={modalContentRef} className="flex-grow overflow-y-auto custom-scrollbar px-6 py-4 md:px-12 bg-white dark:bg-zinc-950">
-           {modalStage === 'selection' && renderSelection()}
-           {modalStage === 'upload' && renderInitialUpload()}
-           {modalStage === 'form' && currentStep === 'Details' && renderDetails()}
+           {modalStage === 'selection' && (
+             <div className="flex flex-col items-center justify-center h-full max-w-5xl mx-auto px-6 py-8 animate-in fade-in zoom-in-95 duration-300">
+               <div className="text-center mb-10">
+                 <h2 className="text-2xl font-bold font-heading mb-2 tracking-tight">Choose Campaign Type</h2>
+                 <p className="text-zinc-500 text-sm font-medium">Select a commerce module to power your video signal.</p>
+               </div>
+               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                 {createOptions.map((opt) => (
+                   <button
+                     key={opt.id}
+                     onClick={() => { setSelectedType(opt.id); setModalStage('upload'); }}
+                     className="flex flex-col items-center p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:border-accent hover:bg-accent/5 transition-all group"
+                   >
+                     <div className="mb-4 text-zinc-400 group-hover:text-accent transition-colors"><opt.icon className="w-8 h-8" /></div>
+                     <h3 className="text-xs font-bold font-heading text-center mb-1">{opt.name}</h3>
+                     <p className="text-[10px] text-zinc-500 text-center font-medium leading-relaxed">{opt.desc}</p>
+                   </button>
+                 ))}
+               </div>
+             </div>
+           )}
+
+           {modalStage === 'upload' && (
+             <div className="flex flex-col items-center justify-center h-full py-16 animate-in fade-in duration-300">
+               <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/*" className="hidden" />
+               <div onClick={() => fileInputRef.current?.click()} className="w-32 h-32 bg-zinc-50 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-8 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border-2 border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 group">
+                 <ArrowUp size={48} className={`${isValidating ? "text-accent animate-bounce" : "text-zinc-400 group-hover:text-zinc-600"} transition-colors`} />
+               </div>
+               <h3 className="text-lg font-medium mb-1">Drag and drop video files to upload</h3>
+               <p className="text-xs text-zinc-500 mb-8 font-medium">Your videos will be private until you publish them.</p>
+               {uploadError && (
+                 <div className="mb-6 flex items-center gap-2 text-red-500 text-sm font-bold animate-in slide-in-from-top-2">
+                   <AlertCircle size={16} /><span>{uploadError}</span>
+                 </div>
+               )}
+               <button onClick={() => fileInputRef.current?.click()} disabled={isValidating} className={`px-8 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-sm font-bold text-sm uppercase transition-all active:scale-95 shadow-lg ${isValidating ? 'opacity-50' : ''}`}>
+                 {isValidating ? 'Validating...' : 'Select files'}
+               </button>
+             </div>
+           )}
+
+           {modalStage === 'form' && currentStep === 'Details' && (
+             <div className="flex flex-col lg:flex-row gap-8">
+               <div className="flex-grow space-y-8 pb-10">
+                 <div className="flex items-center justify-between">
+                   <h2 className="text-2xl font-bold font-heading">Details</h2>
+                   <button className="px-4 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700">Reuse details</button>
+                 </div>
+
+                 {/* Title Input */}
+                 <div className="group relative">
+                   <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                     Title (required) <HelpCircle size={12} className="cursor-help" />
+                   </div>
+                   <textarea 
+                     placeholder="Describe your campaign..."
+                     rows={2}
+                     maxLength={100}
+                     value={title}
+                     onChange={(e) => setTitle(e.target.value)}
+                     className="w-full pt-8 pb-3 px-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:border-accent focus:ring-2 focus:ring-accent outline-none transition-all resize-none font-medium"
+                   />
+                   <div className={`absolute bottom-2 right-3 text-[10px] font-bold ${title.length >= 100 ? 'text-red-500' : 'text-zinc-400'}`}>
+                     {title.length}/100
+                   </div>
+                 </div>
+
+                 {/* Description Input */}
+                 <div className="group relative">
+                   <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                     Description <HelpCircle size={12} className="cursor-help" />
+                   </div>
+                   <textarea 
+                     placeholder="Tell viewers about your brand..."
+                     rows={5}
+                     maxLength={2000}
+                     value={description}
+                     onChange={(e) => setDescription(e.target.value)}
+                     className="w-full pt-8 pb-3 px-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:border-accent focus:ring-2 focus:ring-accent outline-none transition-all resize-none font-medium"
+                   />
+                   <div className={`absolute bottom-2 right-3 text-[10px] font-bold ${description.length >= 2000 ? 'text-red-500' : 'text-zinc-400'}`}>
+                     {description.length}/2000
+                   </div>
+                 </div>
+
+                 {/* Thumbnail Selection */}
+                 <div className="space-y-3">
+                   <div className="flex items-center gap-2">
+                     <h3 className="text-sm font-bold">Thumbnail <span className="text-red-500">*</span></h3>
+                     <HelpCircle size={14} className="text-zinc-400" />
+                   </div>
+                   <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">Select or upload a high-impact cover for your video. A thumbnail is required to proceed.</p>
+                   <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                     <input type="file" ref={thumbInputRef} className="hidden" accept="image/*" onChange={handleThumbnailChange} />
+                     <button 
+                       onClick={() => thumbInputRef.current?.click()}
+                       className="aspect-video border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-accent transition-all group relative overflow-hidden"
+                     >
+                       {thumbnailSrc ? (
+                         <>
+                           <img src={thumbnailSrc} className="w-full h-full object-cover" />
+                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                             <Edit2 size={16} className="text-white" />
+                             <span className="text-[10px] font-bold text-white uppercase tracking-wider">Change</span>
+                           </div>
+                         </>
+                       ) : (
+                         <>
+                           <ImageIcon className="text-zinc-400 group-hover:text-accent" size={20} />
+                           <span className="text-[10px] font-bold text-zinc-500 group-hover:text-accent">Upload file</span>
+                         </>
+                       )}
+                     </button>
+                     <div className="aspect-video bg-zinc-100 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 text-zinc-400">
+                        <Monitor size={20} /><span className="text-[10px] font-bold">Auto-gen</span>
+                     </div>
+                     <div className="aspect-video bg-zinc-100 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 text-zinc-400">
+                        <Monitor size={20} /><span className="text-[10px] font-bold">Test & Win</span>
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* Custom Industry Popover */}
+                 <div className="space-y-3 relative">
+                   <h3 className="text-sm font-bold">Industry Category</h3>
+                   <div className="relative">
+                     <button 
+                       ref={industryBtnRef}
+                       onClick={toggleIndustry}
+                       className="w-full max-w-sm flex items-center justify-between p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm font-bold focus:border-accent transition-all group"
+                     >
+                       <span className={selectedIndustry ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}>
+                         {selectedIndustry || 'Select Category'}
+                       </span>
+                       <ChevronDown size={18} className={`text-zinc-400 transition-transform ${isIndustryOpen ? 'rotate-180' : ''}`} />
+                     </button>
+
+                     {isIndustryOpen && (
+                       <>
+                         <div className="fixed inset-0 z-[80]" onClick={() => setIsIndustryOpen(false)} />
+                         <div 
+                           className={`absolute left-0 w-[480px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-[90] p-4 animate-in fade-in zoom-in-95 duration-200 
+                           ${popoverDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'}`}
+                         >
+                           <div className="grid grid-cols-3 gap-2">
+                             {INDUSTRIES.map(ind => (
+                               <button 
+                                 key={ind}
+                                 onClick={() => { setSelectedIndustry(ind); setIsIndustryOpen(false); }}
+                                 className={`text-left px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                                   selectedIndustry === ind 
+                                     ? 'bg-accent text-black' 
+                                     : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                                 }`}
+                               >
+                                 {ind}
+                               </button>
+                             ))}
+                           </div>
+                         </div>
+                       </>
+                     )}
+                   </div>
+                 </div>
+               </div>
+
+               <div className="w-full lg:w-96 flex-shrink-0">
+                 <div className="sticky top-0 bg-zinc-50 dark:bg-zinc-900/30 rounded-xl overflow-hidden border border-zinc-100 dark:border-zinc-800 shadow-sm">
+                   <div className="aspect-video bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center relative">
+                     {videoSrc ? (
+                       <video src={videoSrc} className="w-full h-full object-contain" controls={uploadProgress === 100} />
+                     ) : (
+                       <div className="text-xs font-bold text-zinc-500 flex flex-col items-center gap-3">
+                         <div className="w-8 h-8 border-4 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />Processing...
+                       </div>
+                     )}
+                     {uploadProgress < 100 && (
+                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                         <div className="text-center">
+                           <div className="text-white text-lg font-black">{uploadProgress}%</div>
+                           <div className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Uploading</div>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                   <div className="p-4 space-y-4">
+                     <div>
+                       <div className="text-[10px] font-bold text-zinc-500 mb-1">Video link</div>
+                       <div className="flex items-center justify-between gap-2">
+                         <span className="text-xs font-bold text-blue-500 truncate">https://clipcart.io/v/aHjHI0w</span>
+                         <Copy size={16} className="text-zinc-400 hover:text-zinc-600 cursor-pointer" />
+                       </div>
+                     </div>
+                     <div>
+                       <div className="text-[10px] font-bold text-zinc-500 mb-1">Filename</div>
+                       <div className="text-xs font-bold truncate">{selectedFile?.name || 'signal.mp4'}</div>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           )}
+
            {modalStage === 'form' && currentStep !== 'Details' && <div className="p-10 text-center opacity-50 font-bold">{currentStep} interface coming soon...</div>}
         </div>
 
         {modalStage === 'form' && (
           <div className="px-6 py-4 flex items-center justify-between border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 safe-bottom">
-            <div className="flex items-center gap-6">
-              <Upload size={20} className="text-zinc-400" />
-              <div className="text-[11px] font-bold text-zinc-500">
-                {uploadProgress < 100 ? `Uploading ${uploadProgress}%...` : 'Upload complete'}
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-3">
+                <Upload size={20} className={uploadProgress === 100 ? "text-accent" : "text-zinc-400"} />
+                <div className="flex flex-col">
+                  <div className="text-[11px] font-black uppercase tracking-widest text-zinc-400">
+                    {uploadProgress < 100 ? 'Signal Upload' : sdStatus !== 'done' || (qualityInfo.hd && hdStatus !== 'done') || (qualityInfo.v4k && v4kStatus !== 'done') ? 'Optimizing Signal' : 'Signal Ready'}
+                  </div>
+                  <div className="text-[13px] font-black tabular-nums">
+                    {uploadProgress < 100 ? `${uploadProgress}% Uploaded` : 'Processing Complete'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Quality Badges Stack */}
+              <div className="flex items-center gap-3 pl-4 border-l border-zinc-100 dark:border-zinc-800">
+                <QualityBadge label="SD" status={sdStatus} available={qualityInfo.sd} />
+                <QualityBadge label="HD" status={hdStatus} available={qualityInfo.hd} />
+                <QualityBadge label="4K" status={v4kStatus} available={qualityInfo.v4k} />
               </div>
             </div>
+            
             <div className="flex gap-3">
                <button onClick={() => { const idx = steps.indexOf(currentStep); if (idx > 0) setCurrentStep(steps[idx-1]); else setModalStage('upload'); }} className="px-6 py-2 rounded-sm text-sm font-bold border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors uppercase">Back</button>
                <button onClick={handleNext} disabled={isNextDisabled} className={`px-8 py-2 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-sm text-sm font-bold shadow-lg uppercase transition-all ${isNextDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90 active:scale-95'}`}>Next</button>
