@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import VideoCard from '../components/VideoCard';
 import { VideoAd, Category } from '../types';
@@ -30,11 +29,14 @@ const HomeView = ({ videos, selectedCategory, onReset, onVideoClick }: HomeViewP
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-y-2 md:gap-x-6 md:gap-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 mx-auto">
+    /* 
+       Elastic Grid: 
+       Using grid-cols with auto-fill and minmax allows the grid to decide the optimal 
+       number of columns based on the container size, preventing "wrapping under" issues.
+    */
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-x-6 gap-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 w-full">
       {videos.map(video => (
-        <div key={video.id} className="flex justify-center">
-          <VideoCard ad={video} onClick={onVideoClick} />
-        </div>
+        <VideoCard key={video.id} ad={video} onClick={onVideoClick} />
       ))}
     </div>
   );

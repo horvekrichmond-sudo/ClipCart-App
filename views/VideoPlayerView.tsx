@@ -21,6 +21,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
   const [showDescription, setShowDescription] = React.useState(false);
   const [showToast, setShowToast] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
   const timer = useTimer(video.timeLeft);
 
   const handleTrackToggle = () => {
@@ -37,11 +38,11 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Standard height and padding class for all commerce buttons
-  const buttonBaseClass = "flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm font-heading transition-all active:scale-95 whitespace-nowrap border h-[40px]";
+  // Standard height and padding class for all primary commerce buttons
+  const buttonBaseClass = "flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm font-heading transition-all active:scale-95 whitespace-nowrap border h-[40px] flex-shrink-0";
 
   return (
-    <div className="max-w-[1700px] mx-auto px-0 md:px-6 lg:px-8 py-0 md:py-4 animate-in fade-in duration-500 relative bg-white dark:bg-yt-dark min-h-screen">
+    <div className="w-full animate-in fade-in duration-500 relative bg-white dark:bg-yt-dark min-h-screen">
       
       {/* COMMERCE TOAST */}
       {showToast && (
@@ -55,11 +56,11 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
         
-        {/* LEFT COLUMN: Main Player & Commerce Info */}
-        <div className="flex-grow lg:w-[68%]">
-          {/* Sticky Video Player */}
+        {/* LEFT COLUMN: Fluid Main Player & Commerce Info */}
+        <div className="flex-1 min-w-0">
+          {/* Video Player */}
           <div className="sticky top-0 z-40 sm:relative aspect-video bg-black sm:rounded-2xl overflow-hidden shadow-2xl border-b sm:border border-zinc-200 dark:border-zinc-800 group">
             <video 
               key={video.videoUrl}
@@ -86,75 +87,117 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
 
             {/* Brand Header & Primary CTA */}
             <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-6">
-              <div className="flex items-center gap-4">
+              {/* Brand Info & Track Button: No Wrap */}
+              <div className="flex items-center gap-4 flex-shrink-0">
                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-accent bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 shadow-lg shadow-accent/10">
                   <img src={video.brand.logo} alt={video.brand.name} className="w-full h-full object-cover" />
                 </div>
-                <div className="flex flex-col min-w-0">
+                <div className="flex flex-col min-w-0 mr-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-yt-textLight dark:text-yt-textDark font-black text-lg font-heading tracking-tight">{video.brand.name}</span>
-                    <CheckCircle2 size={16} strokeWidth={3} className="text-accent" />
+                    <span className="text-yt-textLight dark:text-yt-textDark font-black text-lg font-heading tracking-tight truncate">{video.brand.name}</span>
+                    <CheckCircle2 size={16} strokeWidth={3} className="text-accent flex-shrink-0" />
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="flex">
                       {[1,2,3,4,5].map(i => <Star key={i} size={10} fill="#ffba08" className="text-accent" />)}
                     </div>
-                    <span className="text-zinc-500 text-[10px] font-black uppercase tracking-tighter">4.9 (12k Orders)</span>
+                    <span className="text-zinc-500 text-[10px] font-black uppercase tracking-tighter">4.9</span>
                   </div>
                 </div>
                 
+                {/* Track Brand: No Icon, Never Wraps */}
                 <button 
                   onClick={handleTrackToggle}
-                  className={`${buttonBaseClass} ml-2 border-transparent uppercase tracking-wider ${
+                  className={`${buttonBaseClass} border-transparent uppercase tracking-wider px-6 flex-shrink-0 ${
                     isTracked 
                     ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500' 
                     : 'bg-yt-textLight dark:bg-yt-textDark text-yt-light dark:text-yt-dark hover:bg-accent hover:text-black shadow-md'
                   }`}
                 >
-                  {isTracked ? <Wallet size={14} strokeWidth={3} /> : <Plus size={14} strokeWidth={3} />}
+                  {isTracked && <Wallet size={14} strokeWidth={3} />}
                   <span>{isTracked ? 'Tracked' : 'Track Brand'}</span>
                 </button>
               </div>
 
-              {/* COMMERCE ACTIONS (Replacing social ones) */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-                <button className={`${buttonBaseClass} bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
-                  <Star size={18} strokeWidth={2.5} className="text-accent" />
-                  <span>Rate</span>
-                </button>
+              {/* COMMERCE ACTIONS: YouTube-style responsive overflow */}
+              <div className="flex items-center gap-2 relative">
+                {/* Visible on Mobile (Scroll) | Specific visibility on Desktop */}
+                <div className="flex items-center gap-2 overflow-x-auto md:overflow-visible scrollbar-hide pb-2 md:pb-0">
+                  
+                  {/* Rate: Always visible */}
+                  <button className={`${buttonBaseClass} bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
+                    <Star size={18} strokeWidth={2.5} className="text-accent" />
+                    <span>Rate</span>
+                  </button>
 
-                <button className={`${buttonBaseClass} bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
-                  <MessageCircle size={18} strokeWidth={2.5} />
-                  <span>Ask</span>
-                </button>
+                  {/* Ask: Hidden on smaller desktop widths */}
+                  <button className={`${buttonBaseClass} hidden xl:flex bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
+                    <MessageCircle size={18} strokeWidth={2.5} />
+                    <span>Ask</span>
+                  </button>
 
-                <button className={`${buttonBaseClass} bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
-                  <Share2 size={18} strokeWidth={2.5} />
-                  <span>Send Deal</span>
-                </button>
+                  {/* Send Deal: Hidden on smaller desktop widths */}
+                  <button className={`${buttonBaseClass} hidden 2xl:flex bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
+                    <Share2 size={18} strokeWidth={2.5} />
+                    <span>Send Deal</span>
+                  </button>
 
-                <button 
-                  onClick={() => setIsClipped(!isClipped)}
-                  className={`${buttonBaseClass} ${
-                    isClipped 
-                    ? 'bg-accent border-accent text-black' 
-                    : 'bg-zinc-100 dark:bg-zinc-900 border-transparent hover:bg-accent/10'
-                  }`}
-                >
-                  <Bookmark size={18} strokeWidth={3} fill={isClipped ? "currentColor" : "none"} />
-                  <span>{isClipped ? 'Clipped' : 'Save Deal'}</span>
-                </button>
+                  {/* Save Deal: Hidden on smaller desktop widths */}
+                  <button 
+                    onClick={() => setIsClipped(!isClipped)}
+                    className={`${buttonBaseClass} hidden 2xl:flex ${
+                      isClipped 
+                      ? 'bg-accent border-accent text-black' 
+                      : 'bg-zinc-100 dark:bg-zinc-900 border-transparent hover:bg-accent/10'
+                    }`}
+                  >
+                    <Bookmark size={18} strokeWidth={3} fill={isClipped ? "currentColor" : "none"} />
+                    <span>{isClipped ? 'Clipped' : 'Save Deal'}</span>
+                  </button>
 
-                <button className="flex items-center justify-center w-10 h-10 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all border border-zinc-200 dark:border-zinc-800">
-                  <MoreHorizontal size={18} strokeWidth={2.5} />
-                </button>
+                  {/* More Button: Popout */}
+                  <div className="relative">
+                    <button 
+                      onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                      className="flex items-center justify-center w-10 h-10 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all border border-zinc-200 dark:border-zinc-800"
+                    >
+                      <MoreHorizontal size={18} strokeWidth={2.5} />
+                    </button>
+
+                    {isMoreMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setIsMoreMenuOpen(false)} />
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
+                          {/* These items show in menu only when hidden in bar */}
+                          <button className="xl:hidden w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading">
+                            <MessageCircle size={18} /> Ask Merchant
+                          </button>
+                          <button className="2xl:hidden w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading">
+                            <Share2 size={18} /> Send Deal
+                          </button>
+                          <button 
+                            onClick={() => setIsClipped(!isClipped)}
+                            className="2xl:hidden w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading"
+                          >
+                            <Bookmark size={18} fill={isClipped ? "currentColor" : "none"} /> {isClipped ? 'Clipped' : 'Save Deal'}
+                          </button>
+                          <div className="hidden xl:block 2xl:hidden h-px bg-zinc-100 dark:bg-zinc-800 my-1 mx-3" />
+                          <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading">
+                            <Info size={18} /> Campaign Info
+                          </button>
+                          <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading text-red-500">
+                            <X size={18} /> Not Interested
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* DYNAMIC COMMERCE CARDS */}
             <div className="mt-8 space-y-4">
-              
-              {/* Card type A: Flash Deal / Coupon */}
               {(video.category === 'Flash Deals' || video.hasCoupon) && (
                 <div className="bg-gradient-to-r from-accent/20 to-transparent p-6 rounded-3xl border-l-4 border-accent">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -180,7 +223,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                 </div>
               )}
 
-              {/* Card type B: Local Event / Location */}
               {video.location && (
                 <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -205,14 +247,13 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                 </div>
               )}
 
-              {/* Card type C: Technical Specs */}
               {video.specs && (
                 <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800">
                    <div className="flex items-center gap-3 mb-4">
                       <Cpu size={20} className="text-accent" strokeWidth={3} />
                       <h3 className="font-black uppercase italic font-heading tracking-wider">Technical Specifications</h3>
                    </div>
-                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                       {video.specs.map(spec => (
                         <div key={spec} className="bg-white dark:bg-zinc-800 px-4 py-2 rounded-xl text-xs font-bold border border-zinc-100 dark:border-zinc-700 flex items-center justify-between">
                           <span>{spec}</span>
@@ -224,7 +265,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               )}
             </div>
 
-            {/* Description Expander */}
             <div className="mt-8 p-6 bg-zinc-50 dark:bg-zinc-900/30 rounded-3xl cursor-pointer group border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 transition-all" onClick={() => setShowDescription(!showDescription)}>
               <div className="flex flex-col">
                 <div className="flex items-center justify-between mb-4">
@@ -261,10 +301,8 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Related Content */}
-        <div className="lg:w-[32%] flex flex-col gap-6 px-4 md:px-0 mt-4 lg:mt-0 relative z-10 bg-white dark:bg-yt-dark">
-          
-          {/* Up Next / Related Clips */}
+        {/* RIGHT COLUMN: Elastic Related Content Sidebar */}
+        <div className="w-full lg:w-[400px] xl:w-[450px] flex-shrink-0 flex flex-col gap-6 px-4 md:px-0 mt-4 lg:mt-0 relative z-10 bg-white dark:bg-yt-dark">
           <div className="flex flex-col gap-4">
             <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 px-2">Related Signals</h4>
             <div className="flex flex-col gap-4">
@@ -292,7 +330,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                            <Star size={8} fill="#ffba08" className="text-accent" />
                            <Star size={8} fill="#ffba08" className="text-accent" />
                          </div>
-                         <span className="text-zinc-400 text-[9px] font-bold">Recommended Signal</span>
+                         <span className="text-zinc-400 text-[9px] font-bold">Recommended</span>
                       </div>
                     </div>
                   </div>
@@ -300,7 +338,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               ))}
             </div>
           </div>
-          
           <div className="h-20 lg:hidden" />
         </div>
       </div>

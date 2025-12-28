@@ -9,7 +9,8 @@ interface VideoCardProps {
   onClick?: (id: string) => void;
 }
 
-const VideoCard = ({ ad, onClick }: VideoCardProps) => {
+// Fixed: Explicitly typed as React.FC to include standard JSX attributes like 'key' in the props interface
+const VideoCard: React.FC<VideoCardProps> = ({ ad, onClick }) => {
   const [isClipped, setIsClipped] = useState(false);
   const timer = useTimer(ad.timeLeft);
 
