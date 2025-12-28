@@ -1,0 +1,8 @@
+{
+  "name": "ClipCart",
+  "description": "A high-fidelity video discovery platform for commercials and commerce, featuring a premium dark mode interface and interactive shoppable content.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
