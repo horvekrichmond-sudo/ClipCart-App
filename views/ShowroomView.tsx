@@ -3,7 +3,8 @@ import {
   CheckCircle2, Store, Package, MapPin, 
   HelpCircle, Wallet, Bookmark, ArrowRight,
   ExternalLink, Sparkles, ChevronLeft, ChevronRight,
-  ShieldCheck, Clock, Navigation
+  ShieldCheck, Clock, Navigation, Camera, AlertCircle,
+  Upload
 } from 'lucide-react';
 import { VideoAd } from '../types';
 import VideoCard from '../components/VideoCard';
@@ -18,6 +19,14 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
   const [activeTab, setActiveTab] = React.useState<'Showroom' | 'Catalog' | 'Locations' | 'Q&A'>('Showroom');
   const [isClipped, setIsClipped] = React.useState(false);
   const [isTracked, setIsTracked] = React.useState(false);
+  
+  // Custom Media State
+  const [customBannerUrl, setCustomBannerUrl] = React.useState<string | null>(null);
+  const [customLogoUrl, setCustomLogoUrl] = React.useState<string | null>(null);
+  const [bannerError, setBannerError] = React.useState<string | null>(null);
+  
+  const bannerInputRef = React.useRef<HTMLInputElement>(null);
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
 
   // Filter videos for the brand
   const brandVideos = MOCK_VIDEOS.filter(v => brandId ? v.brand.id === brandId : true);
@@ -32,6 +41,41 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
     trackers: '1.2M',
     activeCoupon: 'SUMMER20',
     description: 'Pushing the boundaries of human potential through high-performance footwear and apparel.'
+  };
+
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      setBannerError('Please upload a valid video file.');
+      return;
+    }
+
+    const video = document.createElement('video');
+    const objectUrl = URL.createObjectURL(file);
+    
+    video.onloadedmetadata = () => {
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      
+      if (height > width) {
+        setBannerError('Please upload a landscape video.');
+        URL.revokeObjectURL(objectUrl);
+      } else {
+        setBannerError(null);
+        setCustomBannerUrl(objectUrl);
+      }
+    };
+    video.src = objectUrl;
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const objectUrl = URL.createObjectURL(file);
+      setCustomLogoUrl(objectUrl);
+    }
   };
 
   const tabs = [
@@ -84,7 +128,6 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
               <VideoCard ad={v} onClick={onVideoClick} />
             </div>
           ))}
-          {/* View All Card */}
           <button className="w-[200px] md:w-[300px] flex-shrink-0 snap-start aspect-video bg-zinc-100 dark:bg-zinc-900 rounded-2xl flex flex-col items-center justify-center gap-3 border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-accent transition-all group">
             <div className="w-12 h-12 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
               <ArrowRight size={20} className="text-accent" />
@@ -100,36 +143,67 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
     <div className="min-h-screen bg-white dark:bg-yt-dark animate-in fade-in duration-700">
       
       {/* 1. CINEMATIC STOREFRONT HEADER */}
-      <div className="relative w-full aspect-[21/9] md:aspect-[3/1] bg-black overflow-hidden md:rounded-b-[40px] group shadow-2xl">
+      <div className="relative w-full aspect-[16/9] md:aspect-[3.5/1] bg-black overflow-hidden md:rounded-b-[40px] group shadow-2xl">
+        <input 
+          type="file" 
+          ref={bannerInputRef}
+          className="hidden" 
+          accept="video/*" 
+          onChange={handleBannerUpload} 
+        />
+        
         <video 
-          src={brand.headerVideo}
-          className="w-full h-full object-cover opacity-60"
+          key={customBannerUrl || brand.headerVideo}
+          src={customBannerUrl || brand.headerVideo}
+          className="w-full h-full object-cover opacity-60 scale-105"
           autoPlay
           loop
           muted
           playsInline
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 md:from-black/90 md:to-black/40" />
         
-        {/* Brand Overlay */}
-        <div className="absolute bottom-6 md:bottom-12 left-6 md:left-12 right-6 md:right-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        {/* Banner Edit Button (Desktop Only Absolute) */}
+        <div className="absolute top-6 right-6 hidden md:flex flex-col items-end gap-2">
+          <button 
+            onClick={() => bannerInputRef.current?.click()}
+            className="p-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white/50 opacity-0 group-hover:opacity-100 transition-all hover:text-white hover:scale-110 shadow-lg"
+            title="Upload Showroom Banner"
+          >
+            <Camera size={20} />
+          </button>
+          {bannerError && (
+            <div className="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest animate-in slide-in-from-right-4 flex items-center gap-2 shadow-2xl">
+              <AlertCircle size={14} />
+              {bannerError}
+            </div>
+          )}
+        </div>
+
+        {/* Brand Overlay (DESKTOP) */}
+        <div className="absolute bottom-12 left-12 right-12 hidden md:flex items-end justify-between gap-6 animate-in slide-in-from-bottom-8 duration-500">
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 md:w-32 md:h-32 rounded-full border-4 border-accent overflow-hidden shadow-2xl bg-white dark:bg-zinc-900 flex-shrink-0">
-              <img src={brand.logo} alt={brand.name} className="w-full h-full object-cover" />
+            <div 
+              onClick={() => logoInputRef.current?.click()}
+              className="w-32 h-32 rounded-full border-4 border-accent overflow-hidden shadow-2xl bg-white dark:bg-zinc-900 flex-shrink-0 cursor-pointer group/logo relative"
+            >
+              <img src={customLogoUrl || brand.logo} alt={brand.name} className="w-full h-full object-cover transition-transform group-hover/logo:scale-110" />
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/logo:opacity-100 transition-opacity">
+                <Upload size={24} className="text-white" />
+              </div>
             </div>
             <div className="flex flex-col mb-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-3xl md:text-5xl font-black text-white font-heading tracking-tighter leading-none">{brand.name}</h1>
-                <CheckCircle2 className="text-accent w-6 h-6 md:w-8 md:h-8" strokeWidth={3} />
+                <h1 className="text-5xl font-black text-white font-heading tracking-tighter leading-none drop-shadow-lg">{brand.name}</h1>
+                <CheckCircle2 className="text-accent w-8 h-8 drop-shadow-lg" strokeWidth={3} />
               </div>
-              <div className="flex items-center gap-3 mt-2 text-zinc-300 text-[10px] md:text-xs font-black uppercase tracking-widest">
+              <div className="flex items-center gap-3 mt-2 text-zinc-300 text-xs font-black uppercase tracking-widest">
                 <span>{brand.industry}</span>
-                <span className="w-1 h-1 bg-zinc-500 rounded-full"></span>
-                <span className="text-accent">{brand.trackers} Trackers</span>
+                <span className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></span>
+                <span className="text-accent font-black">{brand.trackers} Trackers</span>
               </div>
             </div>
           </div>
-          
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsTracked(!isTracked)}
@@ -145,6 +219,49 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
             </button>
           </div>
         </div>
+
+        {/* Mobile Banner Edit Button Overlay */}
+        <button 
+          onClick={() => bannerInputRef.current?.click()}
+          className="md:hidden absolute top-4 right-4 p-2.5 bg-black/30 backdrop-blur-sm border border-white/10 rounded-full text-white/80 active:scale-95"
+        >
+          <Camera size={18} />
+        </button>
+      </div>
+
+      {/* 1b. BRAND DETAILS BELOW BANNER (MOBILE ONLY) */}
+      <div className="md:hidden px-4 pt-5 pb-2">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <input type="file" ref={logoInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+            <div 
+              onClick={() => logoInputRef.current?.click()}
+              className="w-16 h-16 rounded-full border-2 border-accent bg-white dark:bg-zinc-900 overflow-hidden flex-shrink-0 relative active:scale-95 transition-transform"
+            >
+              <img src={customLogoUrl || brand.logo} alt="" className="w-full h-full object-cover" />
+              <div className="absolute bottom-0 right-0 left-0 bg-black/40 h-1/3 flex items-center justify-center">
+                <Camera size={10} className="text-white" />
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-xl font-black text-yt-textLight dark:text-yt-textDark font-heading tracking-tight leading-none">{brand.name}</h1>
+                <CheckCircle2 className="text-accent w-4 h-4" strokeWidth={3} />
+              </div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mt-1.5">
+                <span className="text-accent">{brand.trackers} Trackers</span>
+              </div>
+            </div>
+          </div>
+          <button 
+            onClick={() => setIsTracked(!isTracked)}
+            className={`flex items-center justify-center p-2.5 rounded-full transition-all active:scale-90 ${
+              isTracked ? 'bg-zinc-100 dark:bg-zinc-800 text-accent' : 'bg-accent text-black shadow-lg shadow-accent/20'
+            }`}
+          >
+            <Wallet size={20} strokeWidth={3} />
+          </button>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-0 md:px-8">
@@ -152,7 +269,7 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
         {/* 2. ACTIVE DEAL TICKER */}
         {brand.activeCoupon && (
           <div className="mt-4 md:-mt-6 relative z-10 px-4 md:px-0">
-            <div className="bg-accent rounded-2xl md:rounded-full p-1 shadow-2xl overflow-hidden">
+            <div className="bg-accent rounded-2xl md:rounded-full p-1 shadow-2xl overflow-hidden border border-white/20">
               <div className="flex flex-col md:flex-row items-center justify-between px-6 py-3 md:py-2 gap-4">
                 <div className="flex items-center gap-4 text-black">
                   <div className="bg-black text-accent p-1.5 rounded-lg animate-pulse">
@@ -166,12 +283,12 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
                 <div className="flex items-center gap-2 w-full md:w-auto">
                   <button 
                     onClick={() => setIsClipped(true)}
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-black text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest transition-all active:scale-95"
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-black text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg"
                   >
                     {isClipped ? 'Clipped' : 'Clip Coupon'}
                     <Bookmark size={14} fill={isClipped ? 'currentColor' : 'none'} />
                   </button>
-                  <button className="hidden md:flex items-center gap-1.5 text-black font-black text-[10px] uppercase tracking-widest ml-4">
+                  <button className="hidden md:flex items-center gap-1.5 text-black font-black text-[10px] uppercase tracking-widest ml-4 hover:translate-x-1 transition-transform">
                     Shop Now <ArrowRight size={14} strokeWidth={3} />
                   </button>
                 </div>
@@ -181,7 +298,7 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
         )}
 
         {/* 3. SMART TABS */}
-        <div className="mt-10 border-b border-zinc-100 dark:border-zinc-800 px-4 md:px-0">
+        <div className="mt-8 md:mt-10 border-b border-zinc-100 dark:border-zinc-800 px-4 md:px-0">
           <div className="flex items-center gap-8 overflow-x-auto scrollbar-hide pb-0">
             {tabs.map((tab) => (
               <button
@@ -201,7 +318,7 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
         </div>
 
         {/* 4. CONTENT SHELVES */}
-        <div className="py-12 min-h-[500px]">
+        <div className="py-8 md:py-12 min-h-[500px]">
           {activeTab === 'Showroom' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <Shelf title="New Drops" videos={MOCK_VIDEOS.filter(v => v.isNewDrop)} />
