@@ -56,6 +56,18 @@
       h1, h2, h3, h4, h5, h6, .font-heading {
         font-family: var(--font-heading);
       }
+
+      /* Global Scrollbar Hiding for Mobile Views */
+      @media (max-width: 768px) {
+        * {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+        *::-webkit-scrollbar {
+          display: none !important;
+        }
+      }
+
       .scrollbar-hide::-webkit-scrollbar {
         display: none;
       }

@@ -34,7 +34,7 @@ const Layout = ({
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className="h-screen flex flex-col bg-white dark:bg-zinc-950 relative selection:bg-blue-500/30 transition-colors duration-300">
+    <div className="h-screen flex flex-col bg-white dark:bg-yt-dark relative selection:bg-blue-500/30 transition-colors duration-300">
       
       {/* Header: Fixed and responsive */}
       <div className={`${isVideoView ? 'hidden md:block' : 'block'} z-50`}>
@@ -51,7 +51,7 @@ const Layout = ({
            Synchronized with h-16 header (top-16).
         */}
         {!isVideoView && (
-          <div className="hidden md:block fixed top-16 left-0 bottom-0 w-64 border-r border-zinc-200 dark:border-zinc-900 bg-white dark:bg-zinc-950 z-40">
+          <div className="hidden md:block fixed top-16 left-0 bottom-0 w-64 border-r border-zinc-200 dark:border-zinc-900 bg-white dark:bg-yt-dark z-40">
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
           </div>
         )}
@@ -84,7 +84,7 @@ const Layout = ({
         <main 
           className={`flex-grow overflow-y-auto custom-scrollbar transition-all duration-300 
             ${!isVideoView ? 'md:pl-64 pt-16' : 'pt-0 md:pt-16'} 
-            ${!isVideoView ? 'pb-24 md:pb-10' : 'pb-10'}`}
+            ${!isVideoView ? 'pb-24 md:pb-10' : 'pb-0'}`}
         >
           {!isVideoView && (
             <div className="sticky top-0 z-30">

@@ -24,11 +24,11 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
   const [showDescription, setShowDescription] = React.useState(false);
   const [showToast, setShowToast] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
-  const [popDirection, setPopDirection] = React.useState<'up' | 'down'>('down');
+  const [isRatingOpen, setIsRatingOpen] = React.useState(false);
   
   // Custom Player State
   const videoRef = React.useRef<HTMLVideoElement>(null);
+  const ratingRef = React.useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = React.useState(true);
   const [currentTime, setCurrentTime] = React.useState(0);
   const [duration, setDuration] = React.useState(0);
@@ -38,7 +38,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
   const [autoplay, setAutoplay] = React.useState(true);
   const [isTheaterMode, setIsTheaterMode] = React.useState(false);
   
-  const moreButtonRef = React.useRef<HTMLButtonElement>(null);
   const timer = useTimer(video.timeLeft);
   const controlsTimeoutRef = React.useRef<number | null>(null);
 
@@ -54,7 +53,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
     v.addEventListener('loadedmetadata', handleLoadedMetadata);
     v.addEventListener('ended', handleEnded);
 
-    // Auto-play when video changes
     if (video.videoUrl) {
       v.play().catch(() => setIsPlaying(false));
       setIsPlaying(true);
@@ -66,6 +64,19 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
       v.removeEventListener('ended', handleEnded);
     };
   }, [video.videoUrl]);
+
+  // Handle clicks outside for desktop popover
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ratingRef.current && !ratingRef.current.contains(event.target as Node)) {
+        setIsRatingOpen(false);
+      }
+    };
+    if (isRatingOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isRatingOpen]);
 
   const togglePlay = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -132,20 +143,55 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const toggleMoreMenu = () => {
-    if (!isMoreMenuOpen && moreButtonRef.current) {
-      const rect = moreButtonRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      setPopDirection(spaceBelow < 320 ? 'up' : 'down');
-    }
-    setIsMoreMenuOpen(!isMoreMenuOpen);
-  };
+  const RatingEmojis = () => (
+    <div className="flex items-center justify-between gap-2 md:gap-4">
+      {[
+        { emoji: "😠", label: "Bad" },
+        { emoji: "🙁", label: "Meh" },
+        { emoji: "😐", label: "Okay" },
+        { emoji: "🙂", label: "Good" },
+        { emoji: "😍", label: "Elite" }
+      ].map((item) => (
+        <button 
+          key={item.label}
+          onClick={() => setIsRatingOpen(false)}
+          className="flex flex-col items-center gap-2 group transition-all active:scale-90"
+        >
+          <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white dark:bg-zinc-800 border-[3px] border-black dark:border-white flex items-center justify-center text-2xl md:text-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] group-hover:-translate-y-1 transition-all">
+            {item.emoji}
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-accent transition-colors">{item.label}</span>
+        </button>
+      ))}
+    </div>
+  );
 
-  const buttonBaseClass = "flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm font-heading transition-all active:scale-95 whitespace-nowrap border h-[40px] flex-shrink-0";
+  // Base button styles for the horizontal scroll row
+  const actionBtnClass = "flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-[11px] transition-all active:scale-95 whitespace-nowrap bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 h-[32px] md:h-[36px] flex-shrink-0 text-zinc-700 dark:text-zinc-300";
 
   return (
     <div className={`w-full animate-in fade-in duration-500 relative bg-white dark:bg-yt-dark min-h-screen ${isTheaterMode ? 'pt-0' : ''}`}>
       
+      {/* RATING DRAWER (MOBILE ONLY) */}
+      <div className="md:hidden">
+        {isRatingOpen && (
+          <>
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[110]" onClick={() => setIsRatingOpen(false)} />
+            <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 z-[120] rounded-t-[40px] px-8 pt-10 pb-12 animate-in slide-in-from-bottom duration-300 shadow-[0_-20px_50px_rgba(0,0,0,0.3)]">
+              <div className="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full mx-auto mb-8" />
+              <h3 className="text-xl font-black uppercase font-heading text-center mb-10 tracking-tight">How's the Signal?</h3>
+              <RatingEmojis />
+              <button 
+                onClick={() => setIsRatingOpen(false)}
+                className="mt-12 w-full py-4 bg-zinc-900 dark:bg-white text-white dark:text-black font-black uppercase font-heading text-xs tracking-widest rounded-full"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
       {showToast && (
         <div className="fixed bottom-20 md:bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 fade-in duration-300">
           <div className="bg-yt-textLight dark:bg-yt-textDark text-yt-light dark:text-yt-textDark px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-white/10">
@@ -157,7 +203,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
         </div>
       )}
 
-      <div className={`flex flex-col ${isTheaterMode ? 'lg:flex-col' : 'lg:flex-row'} gap-8 lg:items-start`}>
+      <div className={`flex flex-col ${isTheaterMode ? 'lg:flex-col' : 'lg:flex-row'} gap-0 md:gap-8 lg:items-start`}>
         <div className={`flex-1 min-w-0 ${isTheaterMode ? 'w-full max-w-full' : ''}`}>
           {/* CUSTOM YOUTUBE-STYLE VIDEO PLAYER */}
           <div 
@@ -167,7 +213,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
             onMouseLeave={() => isPlaying && setShowControls(false)}
             onClick={togglePlay}
           >
-            {/* Conditional check to prevent "No supported sources" error */}
             {video.videoUrl ? (
               <video 
                 ref={videoRef}
@@ -185,10 +230,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               </div>
             )}
 
-            {/* PLAYER CONTROLS OVERLAY */}
             <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 transition-opacity duration-300 flex flex-col justify-end ${showControls ? 'opacity-100' : 'opacity-0 cursor-none'}`}>
-              
-              {/* Progress Bar Container */}
               <div className="px-3 pb-0 group/progress relative">
                 <div className="relative h-1 w-full flex items-center group-hover/progress:h-2 transition-all cursor-pointer">
                   <input 
@@ -199,47 +241,35 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                     onChange={handleSeek}
                     className="absolute inset-0 w-full opacity-0 z-20 cursor-pointer"
                   />
-                  {/* Gray Background */}
                   <div className="absolute inset-x-0 h-[3px] group-hover/progress:h-[5px] bg-white/30 transition-all" />
-                  {/* Progress Line */}
                   <div 
                     className="absolute inset-y-0 left-0 h-[3px] group-hover/progress:h-[5px] bg-red-600 transition-all flex justify-end items-center"
                     style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
                   >
-                    {/* Scrubber Knob (YouTube Red Dot) */}
                     <div className="absolute right-0 w-3 h-3 bg-red-600 rounded-full shadow-lg scale-0 group-hover/progress:scale-100 transition-transform origin-center translate-x-1/2" />
                   </div>
                 </div>
               </div>
 
-              {/* Bottom Control Bar */}
               <div className="flex items-center justify-between px-3 h-12">
-                
-                {/* Left Controls */}
                 <div className="flex items-center gap-1">
                   <button onClick={togglePlay} className="p-2 text-white hover:scale-110 transition-transform focus:outline-none">
                     {isPlaying ? <Pause size={28} fill="white" strokeWidth={0} /> : <Play size={28} fill="white" strokeWidth={0} />}
                   </button>
-
                   <div className="flex items-center gap-0 group/volume">
                     <button onClick={toggleMute} className="p-2 text-white hover:scale-110 transition-transform">
                       {isMuted || volume === 0 ? <VolumeX size={26} /> : <Volume2 size={26} />}
                     </button>
-                    {/* Volume Slider would go here */}
                   </div>
-
                   <div className="text-[13px] font-medium text-white px-3 tracking-tight font-body tabular-nums">
                     {formatTime(currentTime)} / {formatTime(duration)}
                   </div>
                 </div>
 
-                {/* Right Controls */}
                 <div className="flex items-center gap-1">
-                  {/* Autoplay Toggle Slider */}
                   <button 
                     onClick={(e) => { e.stopPropagation(); setAutoplay(!autoplay); }}
                     className="flex items-center p-2 relative group"
-                    title="Autoplay is on"
                   >
                     <div className={`w-9 h-3.5 rounded-full transition-colors ${autoplay ? 'bg-red-600/50' : 'bg-white/30'}`}>
                       <div className={`absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all shadow-md ${autoplay ? 'right-1.5 bg-red-600' : 'left-1.5 bg-zinc-400'}`}>
@@ -248,27 +278,13 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                       </div>
                     </div>
                   </button>
-
-                  <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors" title="Subtitles/closed captions (c)">
+                  <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors">
                     <Captions size={24} strokeWidth={2.5} />
                   </button>
-
-                  <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors" title="Settings">
+                  <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors">
                     <Settings size={24} strokeWidth={2.5} />
                   </button>
-
-                  <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors hidden sm:block" title="Miniplayer (i)">
-                    <PictureInPicture size={22} strokeWidth={2.5} />
-                  </button>
-
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setIsTheaterMode(!isTheaterMode); }}
-                    className="p-2 text-white hover:bg-white/10 rounded-full transition-colors hidden sm:block" title="Theater mode (t)"
-                  >
-                    <RectangleHorizontal size={24} strokeWidth={2.5} className={isTheaterMode ? 'text-accent' : ''} />
-                  </button>
-
-                  <button onClick={toggleFullscreen} className="p-2 text-white hover:bg-white/10 rounded-full transition-colors" title="Full screen (f)">
+                  <button onClick={toggleFullscreen} className="p-2 text-white hover:bg-white/10 rounded-full transition-colors">
                     <Maximize size={24} strokeWidth={2.5} />
                   </button>
                 </div>
@@ -276,139 +292,127 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
             </div>
           </div>
 
-          <div className={`mt-4 px-4 md:px-0 relative bg-white dark:bg-yt-dark ${isTheaterMode ? 'max-w-5xl mx-auto' : ''}`}>
-            <div className="flex flex-col gap-1">
-              <h1 className="text-xl md:text-2xl font-bold text-yt-textLight dark:text-yt-textDark leading-tight tracking-tight font-heading">
+          {/* MAIN CONTENT AREA */}
+          <div className={`mt-0 py-4 relative bg-white dark:bg-yt-dark ${isTheaterMode ? 'max-w-5xl mx-auto' : ''}`}>
+            {/* Title Section */}
+            <div className="px-4 md:px-0 flex flex-col gap-0.5 mb-5">
+              <h1 className="text-lg md:text-2xl font-bold text-yt-textLight dark:text-yt-textDark leading-tight tracking-tight font-heading">
                 {video.title}
               </h1>
-              <div className="flex items-center gap-4 text-[11px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
-                <span className="flex items-center gap-1"><ShieldCheck size={12} className="text-accent" /> Verified Merchant</span>
-                <span className="hidden sm:inline">•</span>
-                <span className="flex items-center gap-1"><Info size={12} /> Response: &lt; 15m</span>
+              
+              {/* BRAND + MERCHANT INFO - Unified Mobile Metadata */}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] md:text-[11px] font-black text-zinc-500 uppercase tracking-widest mt-0.5">
+                <span className="text-zinc-900 dark:text-zinc-100">{video.brand.name}</span>
+                <span className="text-zinc-200 dark:text-zinc-800">•</span>
+                <span className="text-zinc-400">124K Trackers</span>
+                <span className="text-zinc-200 dark:text-zinc-800">•</span>
+                <span className="flex items-center gap-1">
+                  <ShieldCheck size={10} className="text-accent" /> Verified
+                </span>
+                <span className="text-zinc-200 dark:text-zinc-800">•</span>
+                <span className="flex items-center gap-1 text-zinc-400/80">
+                  <Info size={10} /> &lt; 15m Response
+                </span>
               </div>
             </div>
 
-            <div className={`mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-800 pb-6 relative ${isMoreMenuOpen ? 'z-[60]' : 'z-auto'}`}>
-              <div className="flex items-center gap-4 flex-shrink-0 min-w-fit">
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-accent bg-zinc-100 dark:bg-zinc-900 flex-shrink-0 shadow-lg shadow-accent/10">
-                  <img src={video.brand.logo} alt={video.brand.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="flex flex-col min-w-0 mr-2 max-w-[120px] sm:max-w-none">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-yt-textLight dark:text-yt-textDark font-black text-lg font-heading tracking-tight truncate">{video.brand.name}</span>
-                    <CheckCircle2 size={16} strokeWidth={3} className="text-accent flex-shrink-0" />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="flex">
-                      {[1,2,3,4,5].map(i => <Star key={i} size={10} fill="#ffba08" className="text-accent" />)}
-                    </div>
-                    <span className="text-zinc-500 text-[10px] font-black uppercase tracking-tighter">4.9</span>
-                  </div>
-                </div>
+            {/* UNIFIED ACTION ROW (HORIZONTAL SCROLL ON MOBILE) */}
+            <div className="w-full overflow-x-auto scrollbar-hide border-b border-zinc-100 dark:border-zinc-800 pb-4">
+              <div className="flex items-center gap-3 px-4 min-w-max">
                 
+                {/* Brand Avatar (Desktop name hidden, name moved to metadata on mobile) */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="w-8 h-8 md:w-11 md:h-11 rounded-full overflow-hidden border-2 border-accent bg-white dark:bg-zinc-900 flex-shrink-0">
+                    <img src={video.brand.logo} alt={video.brand.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="hidden md:flex flex-col justify-center max-w-[100px]">
+                    <div className="flex items-center gap-1 min-w-0">
+                      <span className="text-yt-textLight dark:text-yt-textDark font-black text-sm font-heading tracking-tight truncate">{video.brand.name}</span>
+                      <CheckCircle2 size={12} strokeWidth={3} className="text-accent flex-shrink-0" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Track Button */}
                 <button 
                   onClick={handleTrackToggle}
-                  className={`${buttonBaseClass} border-transparent uppercase tracking-wider px-6 flex-shrink-0 whitespace-nowrap overflow-hidden ${
+                  className={`flex-shrink-0 h-[32px] md:h-[36px] flex items-center justify-center px-4 rounded-full font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all active:scale-95 ${
                     isTracked 
                     ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500' 
-                    : 'bg-yt-textLight dark:bg-yt-textDark text-yt-light dark:text-yt-dark hover:bg-accent hover:text-black shadow-md'
+                    : 'bg-black dark:bg-white text-white dark:text-black shadow-md'
                   }`}
                 >
-                  <span>{isTracked ? 'Tracked' : 'Track Brand'}</span>
+                  {isTracked ? 'Tracked' : 'Track Brand'}
                 </button>
-              </div>
 
-              <div className="flex items-center gap-2 relative">
-                <div className="flex items-center gap-2 overflow-x-auto md:overflow-visible scrollbar-hide pb-2 md:pb-0">
-                  <button className={`${buttonBaseClass} bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
-                    <Star size={18} strokeWidth={2.5} className="text-accent" />
-                    <span>Rate</span>
-                  </button>
-
-                  <button className={`${buttonBaseClass} hidden xl:flex bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
-                    <MessageCircle size={18} strokeWidth={2.5} />
-                    <span>Ask</span>
-                  </button>
-
-                  <button className={`${buttonBaseClass} hidden 2xl:flex bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800`}>
-                    <Share2 size={18} strokeWidth={2.5} />
-                    <span>Send Deal</span>
-                  </button>
-
+                {/* Rate Button - Shows Rating, Opens Responsive Menu */}
+                <div className="relative flex-shrink-0" ref={ratingRef}>
                   <button 
-                    onClick={() => setIsClipped(!isClipped)}
-                    className={`${buttonBaseClass} hidden 2xl:flex ${
-                      isClipped 
-                      ? 'bg-accent border-accent text-black' 
-                      : 'bg-zinc-100 dark:bg-zinc-900 border-transparent hover:bg-accent/10'
-                    }`}
+                    onClick={() => setIsRatingOpen(!isRatingOpen)}
+                    className={actionBtnClass}
                   >
-                    <Bookmark size={18} strokeWidth={3} fill={isClipped ? "currentColor" : "none"} />
-                    <span>{isClipped ? 'Clipped' : 'Save Deal'}</span>
+                    <Star size={14} strokeWidth={2.5} fill="#ffba08" className="text-accent" />
+                    <span>4.9</span>
                   </button>
 
-                  <div className="relative">
-                    <button 
-                      ref={moreButtonRef}
-                      onClick={toggleMoreMenu}
-                      className="flex items-center justify-center w-10 h-10 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all border border-zinc-200 dark:border-zinc-800"
-                    >
-                      <MoreHorizontal size={18} strokeWidth={2.5} />
-                    </button>
-
-                    {isMoreMenuOpen && (
-                      <>
-                        <div className="fixed inset-0 z-[70] bg-black/5 backdrop-blur-[1px] md:bg-transparent" onClick={() => setIsMoreMenuOpen(false)} />
-                        <div className={`absolute right-0 w-64 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-[80] py-2 animate-in fade-in zoom-in-95 duration-200 
-                          ${popDirection === 'up' ? 'bottom-full mb-3' : 'top-full mt-3'}`}>
-                          
-                          <button className="xl:hidden w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading">
-                            <MessageCircle size={18} /> Ask Merchant
-                          </button>
-                          <button className="2xl:hidden w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading">
-                            <Share2 size={18} /> Send Deal
-                          </button>
-                          <button 
-                            onClick={() => { setIsClipped(!isClipped); setIsMoreMenuOpen(false); }}
-                            className="2xl:hidden w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading"
-                          >
-                            <Bookmark size={18} fill={isClipped ? "currentColor" : "none"} /> {isClipped ? 'Clipped' : 'Save Deal'}
-                          </button>
-                          <div className="h-px bg-zinc-100 dark:bg-zinc-800 my-1 mx-3" />
-                          <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading">
-                            <Info size={18} /> Campaign Info
-                          </button>
-                          <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm font-bold font-heading text-red-500">
-                            <X size={18} /> Not Interested
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  {/* DESKTOP POPOVER */}
+                  {isRatingOpen && (
+                    <div className="hidden md:block absolute bottom-full left-0 mb-3 z-50 animate-in fade-in zoom-in-95 duration-200">
+                      <div className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-zinc-200 dark:border-zinc-800 shadow-2xl min-w-[340px]">
+                         <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-6 text-center">Rate this Signal</h4>
+                         <RatingEmojis />
+                         <div className="absolute top-full left-6 -mt-1 w-3 h-3 bg-white dark:bg-zinc-900 border-r border-b border-zinc-200 dark:border-zinc-800 rotate-45" />
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                <button className={actionBtnClass}>
+                  <MessageCircle size={14} strokeWidth={2.5} />
+                  <span>Ask</span>
+                </button>
+
+                <button className={actionBtnClass}>
+                  <Share2 size={14} strokeWidth={2.5} />
+                  <span>Share</span>
+                </button>
+
+                <button 
+                  onClick={() => setIsClipped(!isClipped)}
+                  className={`${actionBtnClass} ${isClipped ? 'bg-accent/10 border-accent/30 text-accent' : ''}`}
+                >
+                  <Bookmark size={14} strokeWidth={2.5} fill={isClipped ? "currentColor" : "none"} />
+                  <span>{isClipped ? 'Saved' : 'Clip'}</span>
+                </button>
+
+                <button className={actionBtnClass}>
+                  <Info size={14} strokeWidth={2.5} />
+                  <span>Details</span>
+                </button>
               </div>
             </div>
 
-            <div className="mt-8 space-y-4">
+            {/* BANNERS: Clean white theme applied */}
+            <div className="mt-6 space-y-4 px-4 md:px-0">
               {(video.category === 'Flash Deals' || video.hasCoupon) && (
-                <div className="bg-gradient-to-r from-accent/20 to-transparent p-6 rounded-3xl border-l-4 border-accent">
+                <div className="bg-gradient-to-r from-accent/5 to-transparent p-5 rounded-2xl border border-accent/20">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex gap-4 items-center">
-                      <div className="w-12 h-12 bg-accent rounded-2xl flex items-center justify-center text-black shadow-xl">
-                        <Sparkles size={24} strokeWidth={3} />
+                      <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-black shadow-xl">
+                        <Sparkles size={20} strokeWidth={3} />
                       </div>
                       <div>
-                        <h3 className="text-lg font-black uppercase font-heading tracking-tight">Active Promo: 20% OFF</h3>
-                        <p className="text-sm font-bold text-zinc-500 tabular-nums">Claim within {timer} • One per user</p>
+                        <h3 className="text-base font-black uppercase font-heading tracking-tight leading-none">Active Promo: 20% OFF</h3>
+                        <p className="text-[11px] font-bold text-zinc-500 tabular-nums mt-1">Claim within {timer} • One per user</p>
                       </div>
                     </div>
                     <button 
                       onClick={() => handleCopyCode('CLIP-SAVE20')}
-                      className={`flex items-center gap-2 px-8 py-3 rounded-full font-black text-sm font-heading transition-all ${
-                        copied ? 'bg-green-500 text-white' : 'bg-black dark:bg-white text-white dark:text-black hover:scale-105 shadow-lg'
+                      className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-full font-black text-xs font-heading transition-all ${
+                        copied ? 'bg-green-500 text-white' : 'bg-black dark:bg-white text-white dark:text-black shadow-lg'
                       }`}
                     >
-                      {copied ? <Check size={18} strokeWidth={3} /> : <Copy size={18} strokeWidth={3} />}
+                      {copied ? <Check size={16} strokeWidth={3} /> : <Copy size={16} strokeWidth={3} />}
                       <span>{copied ? 'Code Copied' : 'CLIP-SAVE20'}</span>
                     </button>
                   </div>
@@ -416,23 +420,23 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               )}
 
               {video.location && (
-                <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800">
+                <div className="bg-white dark:bg-zinc-900/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-800">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex gap-4">
-                      <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-xl">
-                        <MapPin size={24} strokeWidth={3} />
+                      <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-xl">
+                        <MapPin size={20} strokeWidth={3} />
                       </div>
                       <div>
-                        <h3 className="text-lg font-black uppercase font-heading tracking-tight">Near You: {video.location}</h3>
-                        <p className="text-sm font-bold text-zinc-500">Available for in-person demo today</p>
+                        <h3 className="text-base font-black uppercase font-heading tracking-tight leading-none">Near You: {video.location}</h3>
+                        <p className="text-[11px] font-bold text-zinc-500 mt-1">Available for in-person demo today</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button className="px-6 py-3 bg-white dark:bg-zinc-800 rounded-full font-black text-xs font-heading border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 transition-all">
-                        Get Directions
+                      <button className="flex-1 md:flex-none px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 rounded-full font-black text-[10px] font-heading border border-zinc-100 dark:border-zinc-700 hover:bg-white transition-all">
+                        Directions
                       </button>
-                      <button className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-full font-black text-xs font-heading flex items-center gap-2 shadow-md">
-                        <Calendar size={14} /> Add to Calendar
+                      <button className="flex-1 md:flex-none px-4 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-full font-black text-[10px] font-heading flex items-center justify-center gap-2 shadow-md">
+                        <Calendar size={14} /> Schedule
                       </button>
                     </div>
                   </div>
@@ -440,16 +444,16 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               )}
 
               {video.specs && (
-                <div className="bg-zinc-50 dark:bg-zinc-900/50 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800">
+                <div className="bg-white dark:bg-zinc-900/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-800">
                    <div className="flex items-center gap-3 mb-4">
-                      <Cpu size={20} className="text-accent" strokeWidth={3} />
-                      <h3 className="font-black uppercase font-heading tracking-wider">Technical Specifications</h3>
+                      <Cpu size={18} className="text-accent" strokeWidth={3} />
+                      <h3 className="text-xs font-black uppercase font-heading tracking-wider">Technical Specifications</h3>
                    </div>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                       {video.specs.map(spec => (
-                        <div key={spec} className="bg-white dark:bg-zinc-800 px-4 py-2 rounded-xl text-xs font-bold border border-zinc-100 dark:border-zinc-700 flex items-center justify-between">
-                          <span>{spec}</span>
-                          <Check size={12} className="text-green-500" strokeWidth={3} />
+                        <div key={spec} className="bg-white dark:bg-zinc-800 px-3 py-2 rounded-xl text-[11px] font-bold border border-zinc-100 dark:border-zinc-700 flex items-center justify-between">
+                          <span className="text-zinc-700 dark:text-zinc-300">{spec}</span>
+                          <Check size={10} className="text-green-500" strokeWidth={3} />
                         </div>
                       ))}
                    </div>
@@ -457,71 +461,67 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               )}
             </div>
 
-            <div className="mt-8 p-6 bg-zinc-50 dark:bg-zinc-900/30 rounded-3xl cursor-pointer group border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 transition-all" onClick={() => setShowDescription(!showDescription)}>
-              <div className="flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-4 text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
-                    <span>Campaign Details</span>
-                    <span>•</span>
-                    <span>Official ID: #{video.id}829</span>
-                  </div>
-                  <ChevronDown className={`transition-transform duration-300 ${showDescription ? 'rotate-180' : ''}`} />
-                </div>
-                <div className={`text-sm leading-relaxed font-medium text-zinc-600 dark:text-zinc-400 ${showDescription ? '' : 'line-clamp-2'}`}>
-                  Experience the official {video.brand.name} {video.industry} premiere. This technical showcase highlights our latest innovations in high-performance {video.industry} design.
-                  {showDescription && (
-                    <div className="mt-6 space-y-6 animate-in slide-in-from-top-4 duration-300">
-                      <div>
-                        <h4 className="font-black uppercase text-[11px] tracking-widest text-zinc-500 mb-2">Merchant Guarantee</h4>
-                        <p>All items featured in this Clip are 100% authentic and eligible for Brand Wallet warranty protection. Tracking the brand provides instant notifications for limited restocks.</p>
-                      </div>
-                      <div className="flex flex-col gap-3">
-                        <button className="w-full flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 group/link">
-                          <span className="font-bold text-sm">Full Product Catalog</span>
-                          <Plus size={16} className="text-accent group-hover/link:rotate-90 transition-transform" />
-                        </button>
-                        <button className="w-full flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200 dark:border-zinc-700 group/link">
-                          <span className="font-bold text-sm">Sustainability & Ethics Report</span>
-                          <Plus size={16} className="text-accent group-hover/link:rotate-90 transition-transform" />
-                        </button>
-                      </div>
+            {/* DESCRIPTION */}
+            <div className="mt-8 px-4 md:px-0">
+              <div 
+                className="p-5 bg-white dark:bg-zinc-900/30 rounded-2xl cursor-pointer group border border-zinc-100 dark:border-zinc-800 transition-all" 
+                onClick={() => setShowDescription(!showDescription)}
+              >
+                <div className="flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                      <span>Campaign Details</span>
+                      <span>•</span>
+                      <span>Official ID: #{video.id}829</span>
                     </div>
-                  )}
+                    <ChevronDown className={`transition-transform duration-300 ${showDescription ? 'rotate-180' : ''}`} />
+                  </div>
+                  <div className={`text-sm leading-relaxed font-medium text-zinc-600 dark:text-zinc-400 ${showDescription ? '' : 'line-clamp-2'}`}>
+                    Experience the official {video.brand.name} {video.industry} premiere. This technical showcase highlights our latest innovations in high-performance {video.industry} design.
+                    {showDescription && (
+                      <div className="mt-6 space-y-6 animate-in slide-in-from-top-4 duration-300">
+                        <div>
+                          <h4 className="font-black uppercase text-[11px] tracking-widest text-zinc-500 mb-2">Merchant Guarantee</h4>
+                          <p>All items featured in this Clip are 100% authentic and eligible for Brand Wallet warranty protection. Tracking the brand provides instant notifications for limited restocks.</p>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                          <button className="w-full flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-100 dark:border-zinc-700 group/link">
+                            <span className="font-bold text-sm">Full Product Catalog</span>
+                            <Plus size={16} className="text-accent group-hover/link:rotate-90 transition-transform" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className={`w-full ${isTheaterMode ? 'w-full' : 'lg:w-[400px] xl:w-[450px]'} flex-shrink-0 flex flex-col gap-6 px-4 md:px-0 mt-4 lg:mt-0 relative z-10 bg-white dark:bg-yt-dark`}>
+        {/* RELATED VIDEOS SECTION */}
+        <div className={`w-full ${isTheaterMode ? 'w-full px-4' : 'lg:w-[400px] xl:w-[450px] px-4 md:px-0'} flex-shrink-0 flex flex-col gap-6 mt-6 lg:mt-0 relative z-10 bg-white dark:bg-yt-dark`}>
           <div className="flex flex-col gap-4">
-            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 px-2">Related Signals</h4>
-            <div className={`grid ${isTheaterMode ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'} gap-4`}>
+            <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 px-2">Related Signals</h4>
+            <div className={`grid ${isTheaterMode ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'} gap-4 pb-12`}>
               {relatedVideos.map((rv) => (
                 <div 
                   key={rv.id} 
                   onClick={() => onVideoClick(rv.id)}
-                  className="flex gap-4 group cursor-pointer"
+                  className="flex gap-4 group cursor-pointer px-0"
                 >
-                  <div className="relative w-40 h-24 flex-shrink-0 bg-zinc-100 dark:bg-zinc-900 rounded-2xl overflow-hidden border-2 border-transparent group-hover:border-accent transition-all shadow-sm">
+                  <div className="relative w-36 md:w-40 h-20 md:h-24 flex-shrink-0 bg-zinc-50 dark:bg-zinc-900 rounded-xl md:rounded-2xl overflow-hidden border-2 border-transparent group-hover:border-accent transition-all shadow-sm">
                     <img src={rv.thumbnail} alt={rv.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                    <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-bold text-white font-heading">{rv.duration}</div>
+                    <div className="absolute bottom-1.5 right-1.5 px-1 py-0.5 rounded bg-black/80 text-[9px] font-bold text-white font-heading">{rv.duration}</div>
                   </div>
                   <div className="flex flex-col justify-center min-w-0">
-                    <h4 className="text-yt-textLight dark:text-yt-textDark text-sm font-bold line-clamp-2 leading-tight font-heading group-hover:text-accent transition-colors tracking-tight">
+                    <h4 className="text-yt-textLight dark:text-yt-textDark text-xs md:text-sm font-bold line-clamp-2 leading-tight font-heading group-hover:text-accent transition-colors tracking-tight">
                       {rv.title}
                     </h4>
-                    <div className="flex flex-col mt-1.5">
+                    <div className="flex flex-col mt-1">
                       <div className="flex items-center gap-1">
-                        <span className="text-zinc-500 text-xs font-bold truncate">{rv.brand.name}</span>
-                        <CheckCircle2 size={12} strokeWidth={3} className="text-accent" />
-                      </div>
-                      <div className="flex items-center gap-1 mt-1">
-                         <div className="flex">
-                           <Star size={8} fill="#ffba08" className="text-accent" />
-                           <Star size={8} fill="#ffba08" className="text-accent" />
-                         </div>
-                         <span className="text-zinc-400 text-[9px] font-bold">Recommended</span>
+                        <span className="text-zinc-500 text-[11px] md:text-xs font-bold truncate">{rv.brand.name}</span>
+                        <CheckCircle2 size={10} strokeWidth={3} className="text-accent" />
                       </div>
                     </div>
                   </div>
