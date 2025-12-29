@@ -26,7 +26,7 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed = false }: SidebarProps)
   ];
 
   return (
-    <aside className="flex flex-col w-full h-full bg-white dark:bg-yt-dark overflow-y-auto scrollbar-hide py-6 px-3 transition-all duration-300">
+    <aside className="flex flex-col w-full h-full bg-zinc-50/50 dark:bg-yt-dark/50 overflow-y-auto scrollbar-hide py-6 px-3 transition-all duration-300">
       <div className="space-y-1">
         {primaryLinks.map(({ id, label, icon: Icon }) => (
           <button
@@ -52,7 +52,7 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed = false }: SidebarProps)
         ))}
       </div>
 
-      <div className={`mt-8 pt-8 border-t border-zinc-200 dark:border-zinc-800 space-y-1 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
+      <div className={`mt-8 pt-8 space-y-1 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
         {!isCollapsed && (
           <h4 className="px-4 text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-4">Consumer hub</h4>
         )}
@@ -70,14 +70,14 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed = false }: SidebarProps)
         ))}
       </div>
 
-      <div className="mt-auto pt-8 border-t border-zinc-200 dark:border-zinc-800">
+      <div className="mt-auto pt-8">
         <button 
           onClick={() => setActiveTab('profile')}
           className={`w-full flex items-center transition-all ${
             isCollapsed ? 'justify-center p-0' : 'gap-4 p-3 rounded-2xl'
           } ${
             activeTab === 'profile' && !isCollapsed
-              ? 'bg-zinc-100 dark:bg-zinc-800 text-yt-textLight dark:text-yt-textDark border border-zinc-200 dark:border-zinc-700' 
+              ? 'bg-zinc-100 dark:bg-zinc-800 text-yt-textLight dark:text-yt-textDark' 
               : 'text-zinc-400 hover:text-yt-textLight dark:hover:text-yt-textDark'
           }`}
         >

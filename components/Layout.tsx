@@ -60,7 +60,7 @@ const Layout = ({
       <div className="flex flex-grow relative overflow-hidden">
         {/* Desktop Sidebar: Now visible on every page, but collapsible */}
         <div 
-          className={`hidden md:block fixed top-16 left-0 bottom-0 border-r border-zinc-200 dark:border-zinc-900 bg-white dark:bg-yt-dark z-40 transition-all duration-300 ease-in-out ${
+          className={`hidden md:block fixed top-16 left-0 bottom-0 bg-zinc-50/50 dark:bg-yt-dark/50 z-40 transition-all duration-300 ease-in-out ${
             isDesktopCollapsed ? 'w-20' : 'w-64'
           }`}
         >

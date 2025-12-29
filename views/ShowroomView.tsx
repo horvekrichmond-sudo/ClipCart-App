@@ -4,7 +4,7 @@ import {
   HelpCircle, Wallet, Bookmark, ArrowRight,
   ExternalLink, Sparkles, ChevronLeft, ChevronRight,
   ShieldCheck, Clock, Navigation, Camera, AlertCircle,
-  Upload
+  Upload, Volume2, VolumeX
 } from 'lucide-react';
 import { VideoAd } from '../types';
 import VideoCard from '../components/VideoCard';
@@ -19,6 +19,7 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
   const [activeTab, setActiveTab] = React.useState<'Showroom' | 'Catalog' | 'Locations' | 'Q&A'>('Showroom');
   const [isClipped, setIsClipped] = React.useState(false);
   const [isTracked, setIsTracked] = React.useState(false);
+  const [isMuted, setIsMuted] = React.useState(true);
   
   // Custom Media State
   const [customBannerUrl, setCustomBannerUrl] = React.useState<string | null>(null);
@@ -27,6 +28,7 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
   
   const bannerInputRef = React.useRef<HTMLInputElement>(null);
   const logoInputRef = React.useRef<HTMLInputElement>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   // Filter videos for the brand
   const brandVideos = MOCK_VIDEOS.filter(v => brandId ? v.brand.id === brandId : true);
@@ -76,6 +78,11 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
       const objectUrl = URL.createObjectURL(file);
       setCustomLogoUrl(objectUrl);
     }
+  };
+
+  const toggleSound = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMuted(!isMuted);
   };
 
   const tabs = [
@@ -142,8 +149,8 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
   return (
     <div className="min-h-screen bg-white dark:bg-yt-dark animate-in fade-in duration-700">
       
-      {/* 1. CINEMATIC STOREFRONT HEADER */}
-      <div className="relative w-full aspect-[16/9] md:aspect-[3.5/1] bg-black overflow-hidden md:rounded-b-[40px] group shadow-2xl">
+      {/* 1. CINEMATIC STOREFRONT HEADER - Taller Desktop Aspect Ratio (2.4/1) */}
+      <div className="relative w-full aspect-[16/9] md:aspect-[2.4/1] bg-black overflow-hidden md:rounded-b-[40px] group shadow-2xl">
         <input 
           type="file" 
           ref={bannerInputRef}
@@ -153,16 +160,25 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
         />
         
         <video 
+          ref={videoRef}
           key={customBannerUrl || brand.headerVideo}
           src={customBannerUrl || brand.headerVideo}
           className="w-full h-full object-cover opacity-60 scale-105"
           autoPlay
           loop
-          muted
+          muted={isMuted}
           playsInline
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 md:from-black/90 md:to-black/40" />
         
+        {/* Sound Toggle Button (Top Left) */}
+        <button 
+          onClick={toggleSound}
+          className="absolute top-4 left-4 md:top-6 md:left-6 p-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white/80 transition-all hover:text-white hover:scale-110 shadow-lg z-10 md:opacity-0 group-hover:opacity-100"
+        >
+          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+
         {/* Banner Edit Button (Desktop Only Absolute) */}
         <div className="absolute top-6 right-6 hidden md:flex flex-col items-end gap-2">
           <button 
@@ -298,7 +314,7 @@ const ShowroomView = ({ brandId, onVideoClick }: ShowroomViewProps) => {
         )}
 
         {/* 3. SMART TABS */}
-        <div className="mt-8 md:mt-10 border-b border-zinc-100 dark:border-zinc-800 px-4 md:px-0">
+        <div className="mt-8 md:mt-10 px-4 md:px-0">
           <div className="flex items-center gap-8 overflow-x-auto scrollbar-hide pb-0">
             {tabs.map((tab) => (
               <button

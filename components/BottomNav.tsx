@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Home, MapPin, Wallet, Zap } from 'lucide-react';
 import { Tab } from '../types';
@@ -20,7 +19,7 @@ const BottomNav = ({ activeTab, setActiveTab }: BottomNavProps) => {
   const userAvatar = "https://picsum.photos/id/64/100/100";
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-yt-dark border-t border-zinc-200 dark:border-zinc-800 safe-bottom md:hidden transition-colors duration-300">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-yt-dark/90 backdrop-blur-xl safe-bottom md:hidden transition-all duration-300 shadow-[0_-8px_30px_rgba(0,0,0,0.05)]">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
         {tabs.map(({ id, label, icon: Icon, isProfile }) => {
           const isActive = activeTab === id;
