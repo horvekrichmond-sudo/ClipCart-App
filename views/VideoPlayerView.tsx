@@ -1,10 +1,12 @@
-
 import * as React from 'react';
 import { 
   Share2, MoreHorizontal, CheckCircle2, 
   Bookmark, Wallet, Sparkles, Check, X,
   Star, MessageCircle, Copy, MapPin, Calendar, 
-  Cpu, ChevronDown, Info, ShieldCheck, Plus
+  Cpu, ChevronDown, Info, ShieldCheck, Plus,
+  Play, Pause, Volume2, VolumeX, Maximize, Settings, 
+  Captions, PictureInPicture, RectangleHorizontal,
+  ChevronRight, Laptop, Monitor
 } from 'lucide-react';
 import { VideoAd } from '../types';
 import { useTimer } from '../hooks/useTimer';
@@ -25,8 +27,96 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
   const [isMoreMenuOpen, setIsMoreMenuOpen] = React.useState(false);
   const [popDirection, setPopDirection] = React.useState<'up' | 'down'>('down');
   
+  // Custom Player State
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = React.useState(true);
+  const [currentTime, setCurrentTime] = React.useState(0);
+  const [duration, setDuration] = React.useState(0);
+  const [volume, setVolume] = React.useState(1);
+  const [isMuted, setIsMuted] = React.useState(false);
+  const [showControls, setShowControls] = React.useState(true);
+  const [autoplay, setAutoplay] = React.useState(true);
+  const [isTheaterMode, setIsTheaterMode] = React.useState(false);
+  
   const moreButtonRef = React.useRef<HTMLButtonElement>(null);
   const timer = useTimer(video.timeLeft);
+  const controlsTimeoutRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    const handleTimeUpdate = () => setCurrentTime(v.currentTime);
+    const handleLoadedMetadata = () => setDuration(v.duration);
+    const handleEnded = () => setIsPlaying(false);
+
+    v.addEventListener('timeupdate', handleTimeUpdate);
+    v.addEventListener('loadedmetadata', handleLoadedMetadata);
+    v.addEventListener('ended', handleEnded);
+
+    // Auto-play when video changes
+    if (video.videoUrl) {
+      v.play().catch(() => setIsPlaying(false));
+      setIsPlaying(true);
+    }
+
+    return () => {
+      v.removeEventListener('timeupdate', handleTimeUpdate);
+      v.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      v.removeEventListener('ended', handleEnded);
+    };
+  }, [video.videoUrl]);
+
+  const togglePlay = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (videoRef.current) {
+      if (isPlaying) videoRef.current.pause();
+      else videoRef.current.play();
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = Number(e.target.value);
+    setCurrentTime(time);
+    if (videoRef.current) videoRef.current.currentTime = time;
+  };
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "0:00";
+    const hrs = Math.floor(time / 3600);
+    const mins = Math.floor((time % 3600) / 60);
+    const secs = Math.floor(time % 60);
+    
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const handleMouseMove = () => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) window.clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = window.setTimeout(() => {
+      if (isPlaying) setShowControls(false);
+    }, 3000);
+  };
+
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const container = videoRef.current?.parentElement;
+    if (container?.requestFullscreen) {
+      container.requestFullscreen();
+    }
+  };
 
   const handleTrackToggle = () => {
     if (!isTracked) {
@@ -54,11 +144,11 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
   const buttonBaseClass = "flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm font-heading transition-all active:scale-95 whitespace-nowrap border h-[40px] flex-shrink-0";
 
   return (
-    <div className="w-full animate-in fade-in duration-500 relative bg-white dark:bg-yt-dark min-h-screen">
+    <div className={`w-full animate-in fade-in duration-500 relative bg-white dark:bg-yt-dark min-h-screen ${isTheaterMode ? 'pt-0' : ''}`}>
       
       {showToast && (
         <div className="fixed bottom-20 md:bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 fade-in duration-300">
-          <div className="bg-yt-textLight dark:bg-yt-textDark text-yt-light dark:text-yt-dark px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-white/10">
+          <div className="bg-yt-textLight dark:bg-yt-textDark text-yt-light dark:text-yt-textDark px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-white/10">
             <div className="bg-accent p-1 rounded-full">
               <Check size={14} strokeWidth={4} className="text-black" />
             </div>
@@ -67,20 +157,126 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
-        <div className="flex-1 min-w-0">
-          <div className="sticky top-0 z-40 sm:relative aspect-video bg-black sm:rounded-2xl overflow-hidden shadow-2xl border-b sm:border border-zinc-200 dark:border-zinc-800 group">
-            <video 
-              key={video.videoUrl}
-              src={video.videoUrl} 
-              className="w-full h-full object-contain"
-              controls
-              autoPlay
-              playsInline
-            />
+      <div className={`flex flex-col ${isTheaterMode ? 'lg:flex-col' : 'lg:flex-row'} gap-8 lg:items-start`}>
+        <div className={`flex-1 min-w-0 ${isTheaterMode ? 'w-full max-w-full' : ''}`}>
+          {/* CUSTOM YOUTUBE-STYLE VIDEO PLAYER */}
+          <div 
+            className={`group relative bg-black overflow-hidden shadow-2xl transition-all duration-500 cursor-default
+              ${isTheaterMode ? 'w-full aspect-video sm:aspect-[21/9]' : 'sm:rounded-2xl aspect-video'}`}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={() => isPlaying && setShowControls(false)}
+            onClick={togglePlay}
+          >
+            {/* Conditional check to prevent "No supported sources" error */}
+            {video.videoUrl ? (
+              <video 
+                ref={videoRef}
+                key={video.videoUrl}
+                src={video.videoUrl} 
+                className="w-full h-full object-contain"
+                autoPlay
+                playsInline
+                muted={isMuted}
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-zinc-500 gap-4">
+                <div className="w-12 h-12 border-4 border-zinc-800 border-t-accent rounded-full animate-spin" />
+                <span className="text-sm font-bold uppercase tracking-widest">Waking signal...</span>
+              </div>
+            )}
+
+            {/* PLAYER CONTROLS OVERLAY */}
+            <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 transition-opacity duration-300 flex flex-col justify-end ${showControls ? 'opacity-100' : 'opacity-0 cursor-none'}`}>
+              
+              {/* Progress Bar Container */}
+              <div className="px-3 pb-0 group/progress relative">
+                <div className="relative h-1 w-full flex items-center group-hover/progress:h-2 transition-all cursor-pointer">
+                  <input 
+                    type="range"
+                    min={0}
+                    max={duration || 100}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="absolute inset-0 w-full opacity-0 z-20 cursor-pointer"
+                  />
+                  {/* Gray Background */}
+                  <div className="absolute inset-x-0 h-[3px] group-hover/progress:h-[5px] bg-white/30 transition-all" />
+                  {/* Progress Line */}
+                  <div 
+                    className="absolute inset-y-0 left-0 h-[3px] group-hover/progress:h-[5px] bg-red-600 transition-all flex justify-end items-center"
+                    style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                  >
+                    {/* Scrubber Knob (YouTube Red Dot) */}
+                    <div className="absolute right-0 w-3 h-3 bg-red-600 rounded-full shadow-lg scale-0 group-hover/progress:scale-100 transition-transform origin-center translate-x-1/2" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Control Bar */}
+              <div className="flex items-center justify-between px-3 h-12">
+                
+                {/* Left Controls */}
+                <div className="flex items-center gap-1">
+                  <button onClick={togglePlay} className="p-2 text-white hover:scale-110 transition-transform focus:outline-none">
+                    {isPlaying ? <Pause size={28} fill="white" strokeWidth={0} /> : <Play size={28} fill="white" strokeWidth={0} />}
+                  </button>
+
+                  <div className="flex items-center gap-0 group/volume">
+                    <button onClick={toggleMute} className="p-2 text-white hover:scale-110 transition-transform">
+                      {isMuted || volume === 0 ? <VolumeX size={26} /> : <Volume2 size={26} />}
+                    </button>
+                    {/* Volume Slider would go here */}
+                  </div>
+
+                  <div className="text-[13px] font-medium text-white px-3 tracking-tight font-body tabular-nums">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </div>
+                </div>
+
+                {/* Right Controls */}
+                <div className="flex items-center gap-1">
+                  {/* Autoplay Toggle Slider */}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setAutoplay(!autoplay); }}
+                    className="flex items-center p-2 relative group"
+                    title="Autoplay is on"
+                  >
+                    <div className={`w-9 h-3.5 rounded-full transition-colors ${autoplay ? 'bg-red-600/50' : 'bg-white/30'}`}>
+                      <div className={`absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all shadow-md ${autoplay ? 'right-1.5 bg-red-600' : 'left-1.5 bg-zinc-400'}`}>
+                        <Play size={8} fill="white" strokeWidth={0} className={autoplay ? 'ml-0.5' : 'hidden'} />
+                        {!autoplay && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                      </div>
+                    </div>
+                  </button>
+
+                  <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors" title="Subtitles/closed captions (c)">
+                    <Captions size={24} strokeWidth={2.5} />
+                  </button>
+
+                  <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors" title="Settings">
+                    <Settings size={24} strokeWidth={2.5} />
+                  </button>
+
+                  <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors hidden sm:block" title="Miniplayer (i)">
+                    <PictureInPicture size={22} strokeWidth={2.5} />
+                  </button>
+
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setIsTheaterMode(!isTheaterMode); }}
+                    className="p-2 text-white hover:bg-white/10 rounded-full transition-colors hidden sm:block" title="Theater mode (t)"
+                  >
+                    <RectangleHorizontal size={24} strokeWidth={2.5} className={isTheaterMode ? 'text-accent' : ''} />
+                  </button>
+
+                  <button onClick={toggleFullscreen} className="p-2 text-white hover:bg-white/10 rounded-full transition-colors" title="Full screen (f)">
+                    <Maximize size={24} strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-4 px-4 md:px-0 relative bg-white dark:bg-yt-dark">
+          <div className={`mt-4 px-4 md:px-0 relative bg-white dark:bg-yt-dark ${isTheaterMode ? 'max-w-5xl mx-auto' : ''}`}>
             <div className="flex flex-col gap-1">
               <h1 className="text-xl md:text-2xl font-bold text-yt-textLight dark:text-yt-textDark leading-tight tracking-tight font-heading">
                 {video.title}
@@ -297,10 +493,10 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
           </div>
         </div>
 
-        <div className="w-full lg:w-[400px] xl:w-[450px] flex-shrink-0 flex flex-col gap-6 px-4 md:px-0 mt-4 lg:mt-0 relative z-10 bg-white dark:bg-yt-dark">
+        <div className={`w-full ${isTheaterMode ? 'w-full' : 'lg:w-[400px] xl:w-[450px]'} flex-shrink-0 flex flex-col gap-6 px-4 md:px-0 mt-4 lg:mt-0 relative z-10 bg-white dark:bg-yt-dark`}>
           <div className="flex flex-col gap-4">
             <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 px-2">Related Signals</h4>
-            <div className="flex flex-col gap-4">
+            <div className={`grid ${isTheaterMode ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'} gap-4`}>
               {relatedVideos.map((rv) => (
                 <div 
                   key={rv.id} 
