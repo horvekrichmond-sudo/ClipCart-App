@@ -6,6 +6,7 @@ import HomeView from './views/HomeView';
 import ProfileView from './views/ProfileView';
 import VideoPlayerView from './views/VideoPlayerView';
 import MerchantPortalView from './views/MerchantPortalView';
+import ShowroomView from './views/ShowroomView';
 import CreateModal from './components/CreateModal';
 import { MOCK_VIDEOS } from './constants';
 import { Tab, Category, VideoAd } from './types';
@@ -103,6 +104,10 @@ const App = () => {
         )}
 
         {activeTab === 'merchant' && <MerchantPortalView />}
+        
+        {activeTab === 'showroom' && (
+          <ShowroomView onVideoClick={handleVideoClick} />
+        )}
 
         {activeTab === 'nearby' && (
           <div className="max-w-4xl mx-auto p-8 text-center pt-10">

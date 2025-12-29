@@ -1,6 +1,5 @@
-
 import * as React from 'react';
-import { Home, MapPin, Wallet, Zap, Clock, ThumbsUp, ShoppingBag, Bookmark, LayoutDashboard } from 'lucide-react';
+import { Home, MapPin, Wallet, Zap, Clock, ThumbsUp, ShoppingBag, Bookmark, LayoutDashboard, Store } from 'lucide-react';
 import { Tab } from '../types';
 
 interface SidebarProps {
@@ -14,6 +13,7 @@ const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
     { id: 'nearby', label: 'Nearby', icon: MapPin },
     { id: 'wallet', label: 'My wallet', icon: Wallet },
     { id: 'updates', label: 'Updates', icon: Zap },
+    { id: 'showroom', label: 'Featured Showroom', icon: Store },
     { id: 'merchant', label: 'Merchant Portal', icon: LayoutDashboard },
   ] as const;
 
@@ -25,7 +25,7 @@ const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
   ];
 
   return (
-    <aside className="flex flex-col w-full h-full bg-white dark:bg-yt-dark overflow-y-auto scrollbar-hide py-6 px-3 transition-colors duration-300">
+    <aside className="flex flex-col w-full h-full bg-white dark:bg-yt-dark overflow-y-auto scrollbar-hide py-6 px-3 transition-colors duration-300 border-r border-zinc-200 dark:border-zinc-800">
       <div className="space-y-1">
         {primaryLinks.map(({ id, label, icon: Icon }) => (
           <button

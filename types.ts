@@ -1,4 +1,3 @@
-
 export type Category = 
   | 'All' 
   | 'Ending Soon' 
@@ -18,6 +17,7 @@ export interface VideoAd {
   brand: {
     name: string;
     logo: string;
+    id?: string;
   };
   thumbnail: string;
   videoUrl: string; 
@@ -52,4 +52,4 @@ export interface MerchantCampaign {
   spend: string;
 }
 
-export type Tab = 'home' | 'nearby' | 'wallet' | 'updates' | 'profile' | 'video-player' | 'merchant';
+export type Tab = 'home' | 'nearby' | 'wallet' | 'updates' | 'profile' | 'video-player' | 'merchant' | 'showroom';

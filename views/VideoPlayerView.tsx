@@ -6,7 +6,9 @@ import {
   Cpu, ChevronDown, Info, ShieldCheck, Plus,
   Play, Pause, Volume2, VolumeX, Maximize, Settings, 
   Captions, PictureInPicture, RectangleHorizontal,
-  ChevronRight, Laptop, Monitor
+  ChevronRight, Laptop, Monitor,
+  Frown, Meh, Smile, Laugh, Heart,
+  RotateCcw, RotateCw
 } from 'lucide-react';
 import { VideoAd } from '../types';
 import { useTimer } from '../hooks/useTimer';
@@ -88,6 +90,13 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
     }
   };
 
+  const skip = (seconds: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.currentTime += seconds;
+    }
+  };
+
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = Number(e.target.value);
     setCurrentTime(time);
@@ -147,19 +156,19 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
   const RatingEmojis = () => (
     <div className="flex items-center justify-between gap-2 md:gap-4">
       {[
-        { emoji: "😠", label: "Bad" },
-        { emoji: "🙁", label: "Meh" },
-        { emoji: "😐", label: "Okay" },
-        { emoji: "🙂", label: "Good" },
-        { emoji: "😍", label: "Elite" }
+        { icon: Frown, label: "Bad" },
+        { icon: Meh, label: "Meh" },
+        { icon: Smile, label: "Okay" },
+        { icon: Laugh, label: "Good" },
+        { icon: Heart, label: "Elite" }
       ].map((item) => (
         <button 
           key={item.label}
           onClick={() => setIsRatingOpen(false)}
           className="flex flex-col items-center gap-2 group transition-all active:scale-90"
         >
-          <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white dark:bg-zinc-800 border-[3px] border-black dark:border-white flex items-center justify-center text-2xl md:text-3xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] group-hover:-translate-y-1 transition-all">
-            {item.emoji}
+          <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border-[2.5px] border-zinc-200 dark:border-zinc-700 flex items-center justify-center transition-all group-hover:border-accent group-hover:bg-accent/5 group-hover:-translate-y-1 shadow-sm">
+            <item.icon className="w-6 h-6 md:w-7 md:h-7 text-zinc-900 dark:text-zinc-100 group-hover:text-accent group-hover:scale-110 transition-all" strokeWidth={3} />
           </div>
           <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-accent transition-colors">{item.label}</span>
         </button>
@@ -167,7 +176,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
     </div>
   );
 
-  // Action button class for standard buttons
   const actionBtnClass = "flex items-center justify-center gap-1.5 px-4 py-2 rounded-full font-bold text-[12px] md:text-[13px] transition-all active:scale-95 whitespace-nowrap bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 h-[36px] md:h-[38px] flex-shrink-0 text-yt-textLight dark:text-yt-textDark";
 
   return (
@@ -206,7 +214,8 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
 
       <div className={`flex flex-col ${isTheaterMode ? 'lg:flex-col' : 'lg:flex-row'} gap-0 md:gap-8 lg:items-start`}>
         <div className={`flex-1 min-w-0 ${isTheaterMode ? 'w-full max-w-full' : ''}`}>
-          {/* CUSTOM YOUTUBE-STYLE VIDEO PLAYER */}
+          
+          {/* VIDEO PLAYER FRAME */}
           <div 
             className={`group relative bg-black overflow-hidden shadow-2xl transition-all duration-500 cursor-default
               ${isTheaterMode ? 'w-full aspect-video sm:aspect-[21/9]' : 'sm:rounded-2xl aspect-video'}`}
@@ -231,63 +240,141 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               </div>
             )}
 
-            <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 transition-opacity duration-300 flex flex-col justify-end ${showControls ? 'opacity-100' : 'opacity-0 cursor-none'}`}>
-              <div className="px-3 pb-0 group/progress relative">
-                <div className="relative h-1 w-full flex items-center group-hover/progress:h-2 transition-all cursor-pointer">
-                  <input 
-                    type="range"
-                    min={0}
-                    max={duration || 100}
-                    value={currentTime}
-                    onChange={handleSeek}
-                    className="absolute inset-0 w-full opacity-0 z-20 cursor-pointer"
-                  />
-                  <div className="absolute inset-x-0 h-[3px] group-hover/progress:h-[5px] bg-white/30 transition-all" />
-                  <div 
-                    className="absolute inset-y-0 left-0 h-[3px] group-hover/progress:h-[5px] bg-red-600 transition-all flex justify-end items-center"
-                    style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
-                  >
-                    <div className="absolute right-0 w-3 h-3 bg-red-600 rounded-full shadow-lg scale-0 group-hover/progress:scale-100 transition-transform origin-center translate-x-1/2" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between px-3 h-12">
+            {/* OVERLAY CONTROLS */}
+            <div className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 cursor-none pointer-events-none'}`}>
+              
+              {/* TOP BAR (MOBILE ONLY: AUTOPLAY, CAPTIONS, SETTINGS) */}
+              <div className="md:hidden absolute top-0 left-0 right-0 flex items-center justify-end p-4 gap-4 z-10">
                 <div className="flex items-center gap-1">
-                  <button onClick={togglePlay} className="p-2 text-white hover:scale-110 transition-transform focus:outline-none">
-                    {isPlaying ? <Pause size={28} fill="white" strokeWidth={0} /> : <Play size={28} fill="white" strokeWidth={0} />}
-                  </button>
-                  <div className="flex items-center gap-0 group/volume">
-                    <button onClick={toggleMute} className="p-2 text-white hover:scale-110 transition-transform">
-                      {isMuted || volume === 0 ? <VolumeX size={26} /> : <Volume2 size={26} />}
-                    </button>
-                  </div>
-                  <div className="text-[13px] font-medium text-white px-3 tracking-tight font-body tabular-nums">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1">
+                   {/* Pill Autoplay Switch */}
                   <button 
                     onClick={(e) => { e.stopPropagation(); setAutoplay(!autoplay); }}
-                    className="flex items-center p-2 relative group"
+                    className="relative flex items-center px-1 group h-8"
                   >
-                    <div className={`w-9 h-3.5 rounded-full transition-colors ${autoplay ? 'bg-red-600/50' : 'bg-white/30'}`}>
-                      <div className={`absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all shadow-md ${autoplay ? 'right-1.5 bg-red-600' : 'left-1.5 bg-zinc-400'}`}>
-                        <Play size={8} fill="white" strokeWidth={0} className={autoplay ? 'ml-0.5' : 'hidden'} />
-                        {!autoplay && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                    <div className={`w-[34px] h-[14px] rounded-full transition-colors duration-200 ${autoplay ? 'bg-white/40' : 'bg-white/10'}`}>
+                      <div 
+                        className={`absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all duration-200 shadow-md
+                          ${autoplay ? 'translate-x-[16px] bg-white' : 'translate-x-[-2px] bg-zinc-400 group-hover:bg-zinc-300'}
+                        `}
+                      >
+                        {autoplay ? (
+                          <Play size={9} fill="black" strokeWidth={0} className="ml-0.5" />
+                        ) : (
+                          <div className="w-1.5 h-1.5 bg-white rounded-full opacity-60" />
+                        )}
                       </div>
                     </div>
                   </button>
-                  <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors">
-                    <Captions size={24} strokeWidth={2.5} />
-                  </button>
-                  <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors">
-                    <Settings size={24} strokeWidth={2.5} />
-                  </button>
-                  <button onClick={toggleFullscreen} className="p-2 text-white hover:bg-white/10 rounded-full transition-colors">
-                    <Maximize size={24} strokeWidth={2.5} />
-                  </button>
+                  <button className="p-2 text-white/90 drop-shadow-sm"><Captions size={22} strokeWidth={2.5} /></button>
+                  <button className="p-2 text-white/90 drop-shadow-sm"><Settings size={22} strokeWidth={2.5} /></button>
+                </div>
+              </div>
+
+              {/* CENTER CONTROLS (NETFLIX STYLE) - MOBILE FOCUS */}
+              <div className="absolute inset-0 flex items-center justify-center gap-16 md:gap-24">
+                <button 
+                  onClick={(e) => skip(-10, e)} 
+                  className="p-3 text-white transition-transform active:scale-90 hover:scale-110"
+                >
+                  <div className="relative flex items-center justify-center">
+                    <RotateCcw size={40} strokeWidth={2} />
+                    <span className="absolute text-[10px] font-black mt-1">10</span>
+                  </div>
+                </button>
+                
+                <button 
+                  onClick={togglePlay} 
+                  className="p-5 text-white transition-all active:scale-90 hover:scale-105 bg-black/20 rounded-full backdrop-blur-sm border border-white/10"
+                >
+                  {isPlaying ? <Pause size={48} fill="white" strokeWidth={0} /> : <Play size={48} fill="white" strokeWidth={0} className="ml-1" />}
+                </button>
+                
+                <button 
+                  onClick={(e) => skip(10, e)} 
+                  className="p-3 text-white transition-transform active:scale-90 hover:scale-110"
+                >
+                  <div className="relative flex items-center justify-center">
+                    <RotateCw size={40} strokeWidth={2} />
+                    <span className="absolute text-[10px] font-black mt-1">10</span>
+                  </div>
+                </button>
+              </div>
+
+              {/* BOTTOM BAR (RESPONSIVE) */}
+              <div className="absolute bottom-0 left-0 right-0 flex flex-col justify-end">
+                {/* Progress Bar Area */}
+                <div className="px-3 pb-0 group/progress relative">
+                  <div className="relative h-1.5 w-full flex items-center group-hover/progress:h-2.5 transition-all cursor-pointer">
+                    <input 
+                      type="range"
+                      min={0}
+                      max={duration || 100}
+                      value={currentTime}
+                      onChange={handleSeek}
+                      className="absolute inset-0 w-full opacity-0 z-20 cursor-pointer"
+                    />
+                    <div className="absolute inset-x-0 h-[4px] group-hover/progress:h-[6px] bg-white/30 transition-all rounded-full" />
+                    <div 
+                      className="absolute inset-y-0 left-0 h-[4px] group-hover/progress:h-[6px] bg-red-600 transition-all flex justify-end items-center rounded-full"
+                      style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                    >
+                      <div className="absolute right-0 w-3.5 h-3.5 bg-red-600 rounded-full shadow-lg scale-0 group-hover/progress:scale-100 transition-transform origin-center translate-x-1/2" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Controls Bar */}
+                <div className="flex items-center justify-between px-3 h-14">
+                  {/* Left: Time only on mobile, Plus volume on desktop */}
+                  <div className="flex items-center gap-1">
+                    <div className="hidden md:flex items-center">
+                      <button onClick={togglePlay} className="p-2 text-white hover:scale-110 transition-transform focus:outline-none">
+                        {isPlaying ? <Pause size={28} fill="white" strokeWidth={0} /> : <Play size={28} fill="white" strokeWidth={0} />}
+                      </button>
+                      <div className="flex items-center gap-0 group/volume">
+                        <button onClick={toggleMute} className="p-2 text-white hover:scale-110 transition-transform">
+                          {isMuted || volume === 0 ? <VolumeX size={26} /> : <Volume2 size={26} />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="text-[13px] font-medium text-white px-2 tracking-tight font-body tabular-nums">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </div>
+                  </div>
+
+                  {/* Right: Fullscreen only on mobile, Plus more on desktop */}
+                  <div className="flex items-center gap-1">
+                    <div className="hidden md:flex items-center gap-1">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setAutoplay(!autoplay); }}
+                        className="relative flex items-center px-3 group h-full"
+                        title={autoplay ? 'Autoplay is on' : 'Autoplay is off'}
+                      >
+                        <div className={`w-[34px] h-[14px] rounded-full transition-colors duration-200 ${autoplay ? 'bg-white/40' : 'bg-white/10'}`}>
+                          <div 
+                            className={`absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all duration-200 shadow-md
+                              ${autoplay ? 'translate-x-[16px] bg-white' : 'translate-x-[-2px] bg-zinc-400 group-hover:bg-zinc-300'}
+                            `}
+                          >
+                            {autoplay ? (
+                              <Play size={9} fill="black" strokeWidth={0} className="ml-0.5" />
+                            ) : (
+                              <div className="w-1.5 h-1.5 bg-white rounded-full opacity-60" />
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                      <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors">
+                        <Captions size={24} strokeWidth={2.5} />
+                      </button>
+                      <button className="p-2 text-white hover:bg-white/10 rounded-full transition-colors">
+                        <Settings size={24} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                    <button onClick={toggleFullscreen} className="p-2 text-white hover:bg-white/10 rounded-full transition-colors">
+                      <Maximize size={24} strokeWidth={2.5} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -301,7 +388,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                 {video.title}
               </h1>
               
-              {/* MOBILE ONLY METADATA STACK (Name + Trackers already here) */}
               <div className="flex md:hidden flex-wrap items-center gap-x-2 gap-y-1 text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">
                 <span className="text-zinc-900 dark:text-zinc-100">{video.brand.name}</span>
                 <span className="text-zinc-200 dark:text-zinc-800">•</span>
@@ -313,25 +399,21 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               </div>
             </div>
 
-            {/* YOUTUBE STYLE ACTION BAR */}
-            <div className="w-full overflow-x-auto scrollbar-hide md:overflow-visible pb-4">
+            {/* ACTION BAR */}
+            <div className="w-full overflow-x-auto scrollbar-hide md:overflow-visible pb-4 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-3 px-4 md:px-0 min-w-max md:min-w-0 w-full">
                 
-                {/* BRAND IDENTITY (LEFT) */}
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <div className="w-10 h-10 md:w-11 md:h-11 rounded-full overflow-hidden border-2 border-accent bg-white dark:bg-zinc-900 flex-shrink-0">
                     <img src={video.brand.logo} alt={video.brand.name} className="w-full h-full object-cover" />
                   </div>
-                  {/* Brand Name + Trackers: Hidden on mobile (md:flex only) because it's in the stack above */}
                   <div className="hidden md:flex flex-col justify-center min-w-0 mr-1 md:mr-3">
                     <div className="flex items-center gap-1 min-w-0">
                       <span className="text-yt-textLight dark:text-yt-textDark font-black text-sm md:text-base font-heading tracking-tight truncate leading-tight">{video.brand.name}</span>
                       <CheckCircle2 size={14} strokeWidth={3} className="text-accent flex-shrink-0" />
                     </div>
-                    {/* Desktop only Tracker count: Under the name */}
                     <span className="text-[11px] font-bold text-zinc-500 tracking-tight leading-tight">124K trackers</span>
                   </div>
-                  {/* Track Button (Like Subscribe) */}
                   <button 
                     onClick={handleTrackToggle}
                     className={`flex-shrink-0 h-[36px] md:h-[38px] flex items-center justify-center px-5 rounded-full font-bold text-[12px] md:text-[13px] transition-all active:scale-95 ${
@@ -344,12 +426,9 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                   </button>
                 </div>
 
-                {/* FLEX SPACER (DESKTOP) */}
                 <div className="hidden md:block flex-grow" />
 
-                {/* INTERACTION TOOLS (RIGHT ON DESKTOP) */}
                 <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-                  {/* Rate Button */}
                   <div className="relative flex-shrink-0" ref={ratingRef}>
                     <button 
                       onClick={() => setIsRatingOpen(!isRatingOpen)}
@@ -359,7 +438,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                       <span>4.9</span>
                     </button>
 
-                    {/* DESKTOP POPOVER */}
                     {isRatingOpen && (
                       <div className="hidden md:block absolute bottom-full right-0 mb-3 z-50 animate-in fade-in zoom-in-95 duration-200">
                         <div className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-zinc-200 dark:border-zinc-800 shadow-2xl min-w-[340px]">
@@ -397,7 +475,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               </div>
             </div>
 
-            {/* BANNERS: Clean aesthetic commerce tools */}
+            {/* BANNERS */}
             <div className="mt-4 space-y-4 px-4 md:px-0">
               {(video.category === 'Flash Deals' || video.hasCoupon) && (
                 <div className="bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-[24px] border border-zinc-100 dark:border-zinc-800">
@@ -449,7 +527,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               )}
             </div>
 
-            {/* DESCRIPTION BOX: Reimagined as "Campaign Details" */}
+            {/* DESCRIPTION BOX */}
             <div className="mt-6 px-4 md:px-0">
               <div 
                 className="p-5 bg-zinc-50 dark:bg-zinc-900/30 rounded-[24px] border border-zinc-100 dark:border-zinc-800 transition-all cursor-pointer" 
@@ -483,7 +561,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
           </div>
         </div>
 
-        {/* SIDEBAR: RELATED SIGNALS (Feed Card Style) */}
+        {/* SIDEBAR: RELATED SIGNALS */}
         <div className={`w-full ${isTheaterMode ? 'w-full px-4' : 'lg:w-[380px] xl:w-[420px] px-4 md:px-0'} flex-shrink-0 flex flex-col gap-6 mt-8 lg:mt-0 relative z-10 bg-white dark:bg-yt-dark`}>
           <div className="flex flex-col gap-5">
             <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1">Recommended Signals</h4>
