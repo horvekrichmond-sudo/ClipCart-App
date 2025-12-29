@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import { CATEGORIES } from '../constants';
 import { Category } from '../types';
@@ -14,24 +15,18 @@ const CategoryBar = ({ selectedCategory, onSelectCategory }: CategoryBarProps) =
         <div className="flex overflow-x-auto scrollbar-hide px-4 md:px-6 py-3 gap-3 flex-grow snap-x scroll-smooth">
           {CATEGORIES.map((cat) => {
             const isActive = selectedCategory === cat;
-            const isEndingSoon = cat.includes('Ending Soon');
             
             return (
               <button
                 key={cat}
                 onClick={() => onSelectCategory(cat)}
-                className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 font-heading snap-start flex items-center gap-1.5 ${
+                className={`whitespace-nowrap px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 font-heading snap-start flex items-center ${
                   isActive
                     ? 'bg-yt-textLight dark:bg-yt-textDark text-yt-light dark:text-yt-dark'
                     : 'bg-zinc-100 dark:bg-zinc-900 text-yt-textLight dark:text-yt-textDark border border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-800'
                 }`}
               >
-                {isEndingSoon ? (
-                  <>
-                    <span className="text-accent">⚡</span>
-                    <span>Ending soon</span>
-                  </>
-                ) : cat}
+                {cat}
               </button>
             );
           })}

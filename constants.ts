@@ -11,7 +11,7 @@ export const MOCK_VIDEOS: VideoAd[] = [
     thumbnail: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
     videoUrl: 'https://player.vimeo.com/external/494163966.hd.mp4?s=56e6d1c92b95b866c1e550c609c13554b726b216&profile_id=174',
     duration: '00:15',
-    category: 'Flash Deals',
+    category: 'Ending Soon',
     industry: 'Fashion',
     style: 'Cinematic',
     ctaText: 'Shop the Collection',
@@ -40,7 +40,7 @@ export const MOCK_VIDEOS: VideoAd[] = [
     thumbnail: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80',
     videoUrl: 'https://player.vimeo.com/external/459389137.hd.mp4?s=910839e564d720b064c6ed89c646b14243640b72&profile_id=174',
     duration: '01:05',
-    category: 'Tech Showcase',
+    category: 'Tech',
     industry: 'Tech',
     style: 'Cinematic',
     ctaText: 'Pre-Order Now',
@@ -67,7 +67,7 @@ export const MOCK_VIDEOS: VideoAd[] = [
     thumbnail: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80',
     videoUrl: 'https://player.vimeo.com/external/363820251.hd.mp4?s=d0092301844e1388701e19d08e5a7ecb7b255956&profile_id=174',
     duration: '02:15',
-    category: 'Tutorials',
+    category: 'Home',
     industry: 'Home',
     style: 'Tutorial',
     ctaText: 'Shop Equipment',
@@ -90,12 +90,12 @@ export const MOCK_VIDEOS: VideoAd[] = [
 
 export const CATEGORIES: Category[] = [
   'All',
-  '⚡ Ending Soon',
-  '✂️ Coupons',
-  '🎬 Cinematic',
-  '📱 Tech',
-  '👗 Fashion',
-  '🏠 Home',
-  '🚀 New Drops',
-  '📍 Near Me'
+  'Ending Soon',
+  'Coupons',
+  'Cinematic',
+  'Tech',
+  'Fashion',
+  'Home',
+  'New Drops',
+  'Near Me'
 ];

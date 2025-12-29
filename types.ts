@@ -1,14 +1,14 @@
 
 export type Category = 
   | 'All' 
-  | '⚡ Ending Soon' 
-  | '✂️ Coupons' 
-  | '🎬 Cinematic' 
-  | '📱 Tech' 
-  | '👗 Fashion' 
-  | '🏠 Home' 
-  | '🚀 New Drops' 
-  | '📍 Near Me';
+  | 'Ending Soon' 
+  | 'Coupons' 
+  | 'Cinematic' 
+  | 'Tech' 
+  | 'Fashion' 
+  | 'Home' 
+  | 'New Drops' 
+  | 'Near Me';
 
 export type ContentStyle = 'Cinematic' | 'UGC' | 'Minimalist' | 'Tutorial';
 

@@ -23,21 +23,21 @@ const App = () => {
     if (selectedCategory === 'All') return result;
 
     switch (selectedCategory) {
-      case '⚡ Ending Soon':
+      case 'Ending Soon':
         return result.filter(v => !!v.timeLeft);
-      case '✂️ Coupons':
+      case 'Coupons':
         return result.filter(v => !!v.hasCoupon);
-      case '🎬 Cinematic':
+      case 'Cinematic':
         return result.filter(v => v.style === 'Cinematic');
-      case '📱 Tech':
+      case 'Tech':
         return result.filter(v => v.industry === 'Tech');
-      case '👗 Fashion':
+      case 'Fashion':
         return result.filter(v => v.industry === 'Fashion');
-      case '🏠 Home':
+      case 'Home':
         return result.filter(v => v.industry === 'Home');
-      case '🚀 New Drops':
+      case 'New Drops':
         return result.filter(v => !!v.isNewDrop);
-      case '📍 Near Me':
+      case 'Near Me':
         return result.filter(v => !!v.location);
       default:
         return result;

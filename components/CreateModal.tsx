@@ -3,7 +3,8 @@ import {
   X, TrendingUp, ShoppingCart, GraduationCap, Users, Target, Briefcase, Bell, UserCheck, 
   Upload, ChevronRight, MapPin, DollarSign, Tag, Globe, CheckCircle2, Plus, HelpCircle, 
   Copy, MessageSquare, Info, ShieldCheck, Monitor, Image as ImageIcon, ArrowUp, AlertCircle,
-  ChevronDown, Edit2, Check, Calendar, Trash2, Cpu, Smartphone, Play, ExternalLink
+  ChevronDown, Edit2, Check, Calendar, Trash2, Cpu, Smartphone, Play, ExternalLink,
+  Lock, Eye, EyeOff, Globe2, Clock
 } from 'lucide-react';
 
 interface CreateModalProps {
@@ -14,6 +15,7 @@ interface CreateModalProps {
 type Step = 'Details' | 'Merchant Logic' | 'Checks' | 'Visibility';
 type Stage = 'selection' | 'upload' | 'form';
 type QualityStatus = 'pending' | 'processing' | 'done' | 'na';
+type CheckStage = 'scanning' | 'results';
 
 const INDUSTRIES = [
   'Fashion & Luxury', 'Consumer Tech', 'Automotive', 
@@ -50,6 +52,14 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
   const [hdStatus, setHdStatus] = React.useState<QualityStatus>('pending');
   const [v4kStatus, setV4kStatus] = React.useState<QualityStatus>('pending');
   
+  // Checks State
+  const [checkStage, setCheckStage] = React.useState<CheckStage>('scanning');
+  const [hasPermissions, setHasPermissions] = React.useState(false);
+  const [scanningProgress, setScanningProgress] = React.useState(0);
+
+  // Visibility State
+  const [visibility, setVisibility] = React.useState<'private' | 'unlisted' | 'public'>('public');
+  
   // Thumbnail State
   const [thumbnailSrc, setThumbnailSrc] = React.useState<string | null>(null);
   
@@ -63,6 +73,25 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
       setTitle(selectedFile.name.replace(/\.[^/.]+$/, ""));
     }
   }, [selectedFile]);
+
+  // Simulate Checks when entering the Checks step
+  React.useEffect(() => {
+    if (currentStep === 'Checks') {
+      setCheckStage('scanning');
+      setScanningProgress(0);
+      const interval = setInterval(() => {
+        setScanningProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setCheckStage('results');
+            return 100;
+          }
+          return prev + 5;
+        });
+      }, 150);
+      return () => clearInterval(interval);
+    }
+  }, [currentStep]);
 
   React.useEffect(() => {
     if (modalStage === 'form') {
@@ -124,6 +153,10 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     setV4kStatus('pending');
     setTechSpecs([{key: '', value: ''}]);
     setPlatforms([]);
+    setCheckStage('scanning');
+    setHasPermissions(false);
+    setScanningProgress(0);
+    setVisibility('public');
     onClose();
   };
 
@@ -139,14 +172,13 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
       const duration = video.duration;
       const width = video.videoWidth;
       const height = video.videoHeight;
-      const aspectRatio = width / height;
-      const is16by9 = Math.abs(aspectRatio - (16/9)) < 0.05;
+      const isPortrait = height > width;
 
       if (duration > 900) {
-        setUploadError('Exceed recommended length');
+        setUploadError('Exceed recommended length (15m)');
         setIsValidating(false);
-      } else if (!is16by9) {
-        setUploadError('Incorrect aspect ratio');
+      } else if (isPortrait) {
+        setUploadError('Portrait videos not supported. Please upload landscape/horizontal video.');
         setIsValidating(false);
       } else {
         setQualityInfo({
@@ -181,7 +213,9 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     setIsIndustryOpen(!isIndustryOpen);
   };
 
-  const isNextDisabled = currentStep === 'Details' && (!thumbnailSrc || title.trim() === '');
+  const isNextDisabled = 
+    (currentStep === 'Details' && (!thumbnailSrc || title.trim() === '')) ||
+    (currentStep === 'Checks' && (!hasPermissions || checkStage === 'scanning'));
 
   const QualityBadge = ({ label, status, available }: { label: string; status: QualityStatus; available: boolean }) => {
     if (!available) return null;
@@ -204,22 +238,17 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
   const labelClass = "text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2 block";
 
   const renderMerchantLogic = () => {
-    const sectionTitleClass = "text-sm font-bold flex items-center gap-2 mb-6 text-zinc-900 dark:text-white";
+    const sectionTitleClass = "text-sm font-bold mb-6 text-zinc-900 dark:text-white";
 
     switch(selectedType) {
       case 'flash':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-            <h3 className={sectionTitleClass}><TrendingUp size={18} className="text-accent" /> Flash Deal Configuration</h3>
+          <div className="space-y-8">
+            <h3 className={sectionTitleClass}>Flash Deal Configuration</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className={labelClass}>Discount Code</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. SUMMER50" 
-                  className={inputClass + " uppercase font-black tracking-widest"} 
-                  onChange={(e) => e.target.value = e.target.value.toUpperCase()}
-                />
+                <input type="text" placeholder="e.g. SUMMER50" className={inputClass + " uppercase font-black tracking-widest"} />
               </div>
               <div>
                 <label className={labelClass}>Discount Value</label>
@@ -236,52 +265,17 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                 <input type="datetime-local" className={inputClass} />
               </div>
               <div>
-                <label className={labelClass}>Inventory Limit (Optional)</label>
+                <label className={labelClass}>Inventory Limit</label>
                 <input type="number" placeholder="500 units" className={inputClass} />
               </div>
             </div>
           </div>
         );
       
-      case 'event':
-        return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-            <h3 className={sectionTitleClass}><MapPin size={18} className="text-blue-500" /> Local Event Detail</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className={labelClass}>Venue Name</label>
-                <input type="text" placeholder="Madison Square Garden" className={inputClass} />
-              </div>
-              <div className="md:col-span-2">
-                <label className={labelClass}>Map Address</label>
-                <div className="relative">
-                  <input type="text" placeholder="Search for location..." className={inputClass + " pl-10"} />
-                  <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Event Date & Time</label>
-                <input type="datetime-local" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Primary Action (CTA)</label>
-                <div className="flex gap-2">
-                  <select className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 font-bold text-xs min-w-[120px]">
-                    <option>Get Tickets</option>
-                    <option>RSVP</option>
-                    <option>Register</option>
-                  </select>
-                  <input type="url" placeholder="URL" className={inputClass} />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
       case 'product':
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-            <h3 className={sectionTitleClass}><ShoppingCart size={18} className="text-green-500" /> Product Showcase</h3>
+          <div className="space-y-8">
+            <h3 className={sectionTitleClass}>Product Showcase</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className={labelClass}>Price</label>
@@ -290,227 +284,23 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                   <input type="number" placeholder="199.99" className={inputClass + " pl-8"} />
                 </div>
               </div>
-              <div>
-                <label className={labelClass}>Status</label>
-                <select className={inputClass}>
-                  <option>In Stock</option>
-                  <option>Pre-Order</option>
-                  <option>Sold Out</option>
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <label className={labelClass}>Purchase URL</label>
-                <input type="url" placeholder="https://store.brand.com/..." className={inputClass} />
-              </div>
-              
               <div className="md:col-span-2 border-t border-zinc-100 dark:border-zinc-800 pt-6">
                 <div className="flex items-center justify-between mb-4">
                   <label className={labelClass + " mb-0"}>Technical Specifications</label>
-                  <button 
-                    onClick={() => setTechSpecs([...techSpecs, {key: '', value: ''}])}
-                    className="flex items-center gap-1 text-[10px] font-black text-accent uppercase tracking-widest hover:opacity-70"
-                  >
-                    <Plus size={14} /> Add Spec
-                  </button>
+                  <button onClick={() => setTechSpecs([...techSpecs, {key: '', value: ''}])} className="text-[10px] font-black text-accent uppercase flex items-center gap-1"><Plus size={14} /> Add Spec</button>
                 </div>
-                <div className="space-y-3">
-                  {techSpecs.map((spec, idx) => (
-                    <div key={idx} className="flex gap-3 animate-in slide-in-from-left-2">
-                      <input 
-                        type="text" 
-                        placeholder="Key (e.g. Weight)" 
-                        className={inputClass} 
-                        value={spec.key}
-                        onChange={(e) => {
-                          const newSpecs = [...techSpecs];
-                          newSpecs[idx].key = e.target.value;
-                          setTechSpecs(newSpecs);
-                        }}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Value (e.g. 1.2kg)" 
-                        className={inputClass}
-                        value={spec.value}
-                        onChange={(e) => {
-                          const newSpecs = [...techSpecs];
-                          newSpecs[idx].value = e.target.value;
-                          setTechSpecs(newSpecs);
-                        }}
-                      />
-                      {techSpecs.length > 1 && (
-                        <button 
-                          onClick={() => setTechSpecs(techSpecs.filter((_, i) => i !== idx))}
-                          className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                {techSpecs.map((spec, idx) => (
+                  <div key={idx} className="flex gap-3 mb-3">
+                    <input type="text" placeholder="Key" className={inputClass} value={spec.key} onChange={(e) => { const n = [...techSpecs]; n[idx].key = e.target.value; setTechSpecs(n); }} />
+                    <input type="text" placeholder="Value" className={inputClass} value={spec.value} onChange={(e) => { const n = [...techSpecs]; n[idx].value = e.target.value; setTechSpecs(n); }} />
+                    {techSpecs.length > 1 && <button onClick={() => setTechSpecs(techSpecs.filter((_, i) => i !== idx))} className="p-3 text-red-500"><Trash2 size={16} /></button>}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         );
-
-      case 'trailers':
-        return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-            <h3 className={sectionTitleClass}><Bell size={18} className="text-purple-500" /> Trailer & Teasers</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className={labelClass}>Launch Date</label>
-                <input type="date" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>CTA Action</label>
-                <input type="url" placeholder="Pre-Order / Pre-Save Link" className={inputClass} />
-              </div>
-              <div className="md:col-span-2">
-                <label className={labelClass}>Platforms</label>
-                <div className="flex flex-wrap gap-2">
-                  {['Netflix', 'Steam', 'App Store', 'Cinema', 'YouTube', 'PlayStation'].map(plat => (
-                    <button
-                      key={plat}
-                      onClick={() => setPlatforms(prev => prev.includes(plat) ? prev.filter(p => p !== plat) : [...prev, plat])}
-                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-                        platforms.includes(plat)
-                        ? 'bg-accent border-accent text-black'
-                        : 'bg-zinc-100 dark:bg-zinc-800 border-transparent text-zinc-500'
-                      }`}
-                    >
-                      {plat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'service':
-        return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-            <h3 className={sectionTitleClass}><Target size={18} className="text-orange-500" /> Service Demo Logic</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className={labelClass}>Service Type</label>
-                <select className={inputClass}>
-                  <option>Consultation</option>
-                  <option>Free Trial</option>
-                  <option>Quote Request</option>
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>Price Model</label>
-                <input type="text" placeholder="e.g. $50/hr or Free Quote" className={inputClass} />
-              </div>
-              <div className="md:col-span-2">
-                <label className={labelClass}>Booking Link (Calendly / Cal.com)</label>
-                <input type="url" placeholder="https://calendly.com/brand/demo" className={inputClass} />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'crowd':
-        return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-            <h3 className={sectionTitleClass}><GraduationCap size={18} className="text-pink-500" /> Crowdfunding Tracker</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className={labelClass}>Funding Goal</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">$</span>
-                  <input type="number" placeholder="50,000" className={inputClass + " pl-8"} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Current Pledged</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">$</span>
-                  <input type="number" placeholder="12,500" className={inputClass + " pl-8"} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>End Date</label>
-                <input type="date" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Backer Count</label>
-                <input type="number" placeholder="420" className={inputClass} />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'jobs':
-        return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-            <h3 className={sectionTitleClass}><Briefcase size={18} className="text-blue-400" /> Jobs & Hiring</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className={labelClass}>Job Title</label>
-                <input type="text" placeholder="Creative Marketing Director" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Salary Range</label>
-                <div className="flex gap-2">
-                  <input type="number" placeholder="Min" className={inputClass} />
-                  <input type="number" placeholder="Max" className={inputClass} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Frequency</label>
-                <select className={inputClass}>
-                  <option>per year</option>
-                  <option>per hour</option>
-                  <option>contract</option>
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>Location Type</label>
-                <select className={inputClass}>
-                  <option>Remote</option>
-                  <option>On-Site</option>
-                  <option>Hybrid</option>
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>Application Link</label>
-                <input type="url" placeholder="https://careers.brand.com/..." className={inputClass} />
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'influencer':
-        return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
-            <h3 className={sectionTitleClass}><UserCheck size={18} className="text-accent" /> Influencer Promo</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className={labelClass}>Sponsored Brand Name</label>
-                <div className="relative">
-                  <input type="text" placeholder="Search brands..." className={inputClass + " pl-10"} />
-                  <CheckCircle2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-accent" />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Affiliate Code</label>
-                <input type="text" placeholder="CHRIS20" className={inputClass + " uppercase font-black tracking-widest"} />
-              </div>
-              <div>
-                <label className={labelClass}>Affiliate Link</label>
-                <input type="url" placeholder="https://brand.com/?ref=..." className={inputClass} />
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return <div className="p-10 text-center opacity-50 font-bold">Logic Module Error</div>;
+      default: return <div className="p-10 text-center opacity-50 font-bold">Logic Module Content</div>;
     }
   };
 
@@ -605,7 +395,7 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
            {modalStage === 'form' && (
              <div className="flex flex-col lg:flex-row gap-8 pb-10">
                <div className="flex-grow">
-                 {currentStep === 'Details' ? (
+                 {currentStep === 'Details' && (
                    <div className="space-y-8 animate-in fade-in slide-in-from-left-4">
                      <div className="flex items-center justify-between">
                        <h2 className="text-2xl font-bold font-heading">Details</h2>
@@ -613,72 +403,30 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                      </div>
 
                      <div className="group relative">
-                       <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-                         Title (required) <HelpCircle size={12} className="cursor-help" />
-                       </div>
-                       <textarea 
-                         placeholder="Describe your campaign..."
-                         rows={2}
-                         maxLength={100}
-                         value={title}
-                         onChange={(e) => setTitle(e.target.value)}
-                         className="w-full pt-8 pb-3 px-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:border-accent focus:ring-2 focus:ring-accent outline-none transition-all resize-none font-medium"
-                       />
+                       <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Title (required)</div>
+                       <textarea placeholder="Describe your campaign..." rows={2} maxLength={100} value={title} onChange={(e) => setTitle(e.target.value)} className="w-full pt-8 pb-3 px-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:border-accent outline-none transition-all resize-none font-medium" />
                        <div className={`absolute bottom-2 right-3 text-[10px] font-bold ${title.length >= 100 ? 'text-red-500' : 'text-zinc-400'}`}>
                          {title.length}/100
                        </div>
                      </div>
 
                      <div className="group relative">
-                       <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-                         Description <HelpCircle size={12} className="cursor-help" />
-                       </div>
-                       <textarea 
-                         placeholder="Tell viewers about your brand..."
-                         rows={5}
-                         maxLength={2000}
-                         value={description}
-                         onChange={(e) => setDescription(e.target.value)}
-                         className="w-full pt-8 pb-3 px-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:border-accent focus:ring-2 focus:ring-accent outline-none transition-all resize-none font-medium"
-                       />
+                       <div className="absolute top-2 left-3 flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Description</div>
+                       <textarea placeholder="Tell viewers about your brand..." rows={5} maxLength={2000} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full pt-8 pb-3 px-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:border-accent outline-none transition-all resize-none font-medium" />
                        <div className={`absolute bottom-2 right-3 text-[10px] font-bold ${description.length >= 2000 ? 'text-red-500' : 'text-zinc-400'}`}>
                          {description.length}/2000
                        </div>
                      </div>
 
                      <div className="space-y-3">
-                       <div className="flex items-center gap-2">
-                         <h3 className="text-sm font-bold">Thumbnail <span className="text-red-500">*</span></h3>
-                         <HelpCircle size={14} className="text-zinc-400" />
-                       </div>
-                       <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">Select or upload a high-impact cover for your video. A thumbnail is required to proceed.</p>
-                       <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                       <h3 className="text-sm font-bold">Thumbnail <span className="text-red-500">*</span></h3>
+                       <div className="grid grid-cols-4 gap-3">
                          <input type="file" ref={thumbInputRef} className="hidden" accept="image/*" onChange={handleThumbnailChange} />
-                         <button 
-                           onClick={() => thumbInputRef.current?.click()}
-                           className="aspect-video border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-accent transition-all group relative overflow-hidden"
-                         >
-                           {thumbnailSrc ? (
-                             <>
-                               <img src={thumbnailSrc} className="w-full h-full object-cover" />
-                               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                 <Edit2 size={16} className="text-white" />
-                                 <span className="text-[10px] font-bold text-white uppercase tracking-wider">Change</span>
-                               </div>
-                             </>
-                           ) : (
-                             <>
-                               <ImageIcon className="text-zinc-400 group-hover:text-accent" size={20} />
-                               <span className="text-[10px] font-bold text-zinc-500 group-hover:text-accent">Upload file</span>
-                             </>
-                           )}
+                         <button onClick={() => thumbInputRef.current?.click()} className="aspect-video border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-accent transition-all group overflow-hidden relative">
+                           {thumbnailSrc ? <img src={thumbnailSrc} className="w-full h-full object-cover" /> : <ImageIcon size={20} className="text-zinc-400 group-hover:text-accent" />}
                          </button>
-                         <div className="aspect-video bg-zinc-100 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 text-zinc-400">
-                            <Monitor size={20} /><span className="text-[10px] font-bold">Auto-gen</span>
-                         </div>
-                         <div className="aspect-video bg-zinc-100 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center gap-2 text-zinc-400">
-                            <Monitor size={20} /><span className="text-[10px] font-bold">Test & Win</span>
-                         </div>
+                         <div className="aspect-video bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800"><Monitor size={20} className="text-zinc-400" /></div>
+                         <div className="aspect-video bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800"><Monitor size={20} className="text-zinc-400" /></div>
                        </div>
                      </div>
 
@@ -723,47 +471,122 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                        </div>
                      </div>
                    </div>
-                 ) : currentStep === 'Merchant Logic' ? (
-                   renderMerchantLogic()
-                 ) : (
-                   <div className="p-10 text-center opacity-50 font-bold">{currentStep} interface coming soon...</div>
+                 )}
+
+                 {currentStep === 'Merchant Logic' && (
+                   <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+                     <h2 className="text-2xl font-bold font-heading">Merchant Logic</h2>
+                     {renderMerchantLogic()}
+                   </div>
+                 )}
+
+                 {currentStep === 'Checks' && (
+                   <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+                     <h2 className="text-2xl font-bold font-heading">Checks</h2>
+                     <p className="text-sm text-zinc-500 font-medium -mt-6">We'll scan your signal for copyright or ad suitability issues.</p>
+
+                     <div className="space-y-4">
+                        <div className="p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                          <div className="flex items-start justify-between">
+                            <div className="flex gap-4">
+                              <div className="mt-1">
+                                {checkStage === 'scanning' ? <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" /> : <CheckCircle2 size={20} className="text-green-500" />}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-sm">Copyright</h4>
+                                <p className="text-xs text-zinc-500 mt-1">{checkStage === 'scanning' ? 'Scanning audio & video fingerprints...' : 'No issues found.'}</p>
+                              </div>
+                            </div>
+                            {checkStage === 'results' && <span className="text-[10px] font-black uppercase text-green-500 tracking-widest">Passed</span>}
+                          </div>
+                        </div>
+
+                        <div className="p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                          <div className="flex items-start justify-between">
+                            <div className="flex gap-4">
+                              <div className="mt-1">
+                                {checkStage === 'scanning' ? <div className="w-5 h-5 border-2 border-zinc-300 border-t-transparent rounded-full animate-spin" /> : <CheckCircle2 size={20} className="text-green-500" />}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-sm">Ad suitability</h4>
+                                <p className="text-xs text-zinc-500 mt-1">{checkStage === 'scanning' ? 'Verifying merchant policy compliance...' : 'Appropriate for all discovery feeds.'}</p>
+                              </div>
+                            </div>
+                            {checkStage === 'results' && <span className="text-[10px] font-black uppercase text-green-500 tracking-widest">Passed</span>}
+                          </div>
+                        </div>
+
+                        <div className="pt-6 border-t border-zinc-100 dark:border-zinc-800">
+                           <label className="flex items-start gap-3 cursor-pointer group">
+                             <div className={`mt-0.5 w-5 h-5 rounded border-2 transition-all flex items-center justify-center ${hasPermissions ? 'bg-accent border-accent' : 'border-zinc-300 dark:border-zinc-700 group-hover:border-accent'}`}>
+                               {hasPermissions && <Check size={14} strokeWidth={4} className="text-black" />}
+                               <input type="checkbox" className="hidden" checked={hasPermissions} onChange={(e) => setHasPermissions(e.target.checked)} />
+                             </div>
+                             <div className="flex-grow">
+                               <span className="text-xs font-bold dark:text-zinc-200">Asset Ownership Declaration</span>
+                               <p className="text-[11px] text-zinc-500 font-medium mt-1 leading-relaxed">
+                                 I confirm that I own all necessary rights to this signal, including featured music and talent releases. 
+                                 I understand misrepresentation leads to immediate merchant suspension.
+                               </p>
+                             </div>
+                           </label>
+                        </div>
+                     </div>
+                   </div>
+                 )}
+
+                 {currentStep === 'Visibility' && (
+                   <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+                      <h2 className="text-2xl font-bold font-heading">Visibility</h2>
+                      <p className="text-sm text-zinc-500 font-medium -mt-6">Choose when to go live and who can discover your signal.</p>
+
+                      <div className="space-y-3">
+                         {[
+                           { id: 'private', label: 'Private', desc: 'Only you and authorized managers', icon: Lock },
+                           { id: 'unlisted', label: 'Unlisted', desc: 'Only discovered via direct signal link', icon: EyeOff },
+                           { id: 'public', label: 'Public Discovery', desc: 'Anyone can watch and shop your signal', icon: Globe2 },
+                         ].map((opt) => (
+                           <button 
+                             key={opt.id}
+                             onClick={() => setVisibility(opt.id as any)}
+                             className={`w-full flex items-start gap-4 p-5 rounded-2xl border-2 transition-all text-left ${visibility === opt.id ? 'border-accent bg-accent/5' : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-200'}`}
+                           >
+                             <div className={`mt-1 ${visibility === opt.id ? 'text-accent' : 'text-zinc-400'}`}><opt.icon size={20} /></div>
+                             <div>
+                               <div className="text-sm font-bold">{opt.label}</div>
+                               <p className="text-xs text-zinc-500 mt-1">{opt.desc}</p>
+                             </div>
+                           </button>
+                         ))}
+                      </div>
+
+                      <div className="pt-6 border-t border-zinc-100 dark:border-zinc-800">
+                         <h3 className="text-sm font-bold mb-4">Schedule Launch</h3>
+                         <button className="flex items-center gap-3 px-6 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-500">
+                           <Clock size={16} /> Set discovery date & time
+                         </button>
+                      </div>
+                   </div>
                  )}
                </div>
 
-               <div className="w-full lg:w-96 flex-shrink-0">
-                 <div className="sticky top-0 bg-zinc-50 dark:bg-zinc-900/30 rounded-xl overflow-hidden border border-zinc-100 dark:border-zinc-800 shadow-sm">
-                   <div className="aspect-video bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center relative">
-                     {videoSrc ? (
-                       <video src={videoSrc} className="w-full h-full object-contain" controls={uploadProgress === 100} />
-                     ) : (
-                       <div className="text-xs font-bold text-zinc-500 flex flex-col items-center gap-3">
-                         <div className="w-8 h-8 border-4 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />Processing...
-                       </div>
-                     )}
-                     {uploadProgress < 100 && (
-                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                         <div className="text-center">
-                           <div className="text-white text-lg font-black">{uploadProgress}%</div>
-                           <div className="text-white/70 text-[10px] font-bold uppercase tracking-widest">Uploading</div>
-                         </div>
-                       </div>
-                     )}
-                   </div>
-                   <div className="p-4 space-y-4">
-                     <div>
-                       <div className="text-[10px] font-bold text-zinc-500 mb-1">Video link</div>
-                       <div className="flex items-center justify-between gap-2">
-                         <span className="text-xs font-bold text-blue-500 truncate">https://clipcart.io/v/aHjHI0w</span>
-                         <Copy size={16} className="text-zinc-400 hover:text-zinc-600 cursor-pointer" />
-                       </div>
+               {currentStep === 'Details' && (
+                 <div className="w-full lg:w-96 flex-shrink-0">
+                   <div className="sticky top-0 bg-zinc-50 dark:bg-zinc-900/30 rounded-xl overflow-hidden border border-zinc-100 dark:border-zinc-800 shadow-sm">
+                     <div className="aspect-video bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center relative">
+                       {videoSrc ? <video src={videoSrc} className="w-full h-full object-contain" controls={uploadProgress === 100} /> : <div className="text-xs font-bold text-zinc-500 flex flex-col items-center gap-3"><div className="w-8 h-8 border-4 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />Processing...</div>}
+                       {uploadProgress < 100 && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><div className="text-center"><div className="text-white text-lg font-black">{uploadProgress}%</div><div className="text-white/70 text-[10px] font-bold uppercase">Uploading</div></div></div>}
                      </div>
-                     <div>
-                       <div className="text-[10px] font-bold text-zinc-500 mb-1">Filename</div>
-                       <div className="text-xs font-bold truncate">{selectedFile?.name || 'signal.mp4'}</div>
+                     <div className="p-4 space-y-4">
+                       <div>
+                         <div className="text-[10px] font-bold text-zinc-500 mb-1">Video link</div>
+                         <div className="flex items-center justify-between gap-2"><span className="text-xs font-bold text-blue-500 truncate">https://clipcart.io/v/aHjHI0w</span><Copy size={16} className="text-zinc-400 cursor-pointer" /></div>
+                       </div>
+                       <div><div className="text-[10px] font-bold text-zinc-500 mb-1">Filename</div><div className="text-xs font-bold truncate">{selectedFile?.name || 'signal.mp4'}</div></div>
                      </div>
                    </div>
                  </div>
-               </div>
+               )}
              </div>
            )}
         </div>
@@ -774,12 +597,8 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
               <div className="flex items-center gap-3">
                 <Upload size={20} className={uploadProgress === 100 ? "text-accent" : "text-zinc-400"} />
                 <div className="flex flex-col">
-                  <div className="text-[11px] font-black uppercase tracking-widest text-zinc-400">
-                    {uploadProgress < 100 ? 'Signal Upload' : sdStatus !== 'done' || (qualityInfo.hd && hdStatus !== 'done') || (qualityInfo.v4k && v4kStatus !== 'done') ? 'Optimizing Signal' : 'Signal Ready'}
-                  </div>
-                  <div className="text-[13px] font-black tabular-nums">
-                    {uploadProgress < 100 ? `${uploadProgress}% Uploaded` : 'Processing Complete'}
-                  </div>
+                  <div className="text-[11px] font-black uppercase tracking-widest text-zinc-400">{uploadProgress < 100 ? 'Signal Upload' : 'Signal Ready'}</div>
+                  <div className="text-[13px] font-black tabular-nums">{uploadProgress < 100 ? `${uploadProgress}% Uploaded` : 'Processing Complete'}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 pl-4 border-l border-zinc-100 dark:border-zinc-800">
