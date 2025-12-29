@@ -1,21 +1,23 @@
 import * as React from 'react';
 import { 
   X, TrendingUp, ShoppingCart, GraduationCap, Users, Target, Briefcase, Bell, UserCheck, 
-  Upload, ChevronRight, MapPin, DollarSign, Tag, Globe, CheckCircle2, Plus, HelpCircle, 
-  Copy, MessageSquare, Info, ShieldCheck, Monitor, Image as ImageIcon, ArrowUp, AlertCircle,
-  ChevronDown, Edit2, Check, Calendar, Trash2, Cpu, Smartphone, Play, ExternalLink,
-  Lock, Eye, EyeOff, Globe2, Clock
+  Upload, MapPin, CheckCircle2, Plus, HelpCircle, 
+  Copy, MessageSquare, Info, Image as ImageIcon, ArrowUp, AlertCircle,
+  ChevronDown, Check, Trash2, Monitor,
+  Lock, EyeOff, Globe2, Clock, ShieldCheck
 } from 'lucide-react';
+import { VideoAd } from '../types';
 
 interface CreateModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onPublish: (video: VideoAd) => void;
 }
 
 type Step = 'Details' | 'Merchant Logic' | 'Checks' | 'Visibility';
 type Stage = 'selection' | 'upload' | 'form';
 type QualityStatus = 'pending' | 'processing' | 'done' | 'na';
-type CheckStage = 'scanning' | 'results';
+type CheckStage = 'pending' | 'scanning' | 'results';
 
 const INDUSTRIES = [
   'Fashion & Luxury', 'Consumer Tech', 'Automotive', 
@@ -24,7 +26,7 @@ const INDUSTRIES = [
   'Software/SaaS', 'Education', 'Non-Profit'
 ];
 
-const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
+const CreateModal = ({ isOpen, onClose, onPublish }: CreateModalProps) => {
   const [selectedType, setSelectedType] = React.useState<string | null>(null);
   const [modalStage, setModalStage] = React.useState<Stage>('selection');
   const [currentStep, setCurrentStep] = React.useState<Step>('Details');
@@ -38,7 +40,6 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
   
   // Logic States
   const [techSpecs, setTechSpecs] = React.useState<{key: string, value: string}[]>([{key: '', value: ''}]);
-  const [platforms, setPlatforms] = React.useState<string[]>([]);
   
   // Upload & Quality State
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
@@ -53,7 +54,7 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
   const [v4kStatus, setV4kStatus] = React.useState<QualityStatus>('pending');
   
   // Checks State
-  const [checkStage, setCheckStage] = React.useState<CheckStage>('scanning');
+  const [checkStage, setCheckStage] = React.useState<CheckStage>('pending');
   const [hasPermissions, setHasPermissions] = React.useState(false);
   const [scanningProgress, setScanningProgress] = React.useState(0);
 
@@ -74,11 +75,10 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     }
   }, [selectedFile]);
 
-  // Simulate Checks when entering the Checks step
+  // Background Checks triggering immediately after upload reaches 100%
   React.useEffect(() => {
-    if (currentStep === 'Checks') {
+    if (uploadProgress === 100 && checkStage === 'pending') {
       setCheckStage('scanning');
-      setScanningProgress(0);
       const interval = setInterval(() => {
         setScanningProgress(prev => {
           if (prev >= 100) {
@@ -86,33 +86,33 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
             setCheckStage('results');
             return 100;
           }
-          return prev + 5;
+          return prev + 2;
         });
-      }, 150);
+      }, 80);
       return () => clearInterval(interval);
     }
-  }, [currentStep]);
+  }, [uploadProgress]);
 
   React.useEffect(() => {
     if (modalStage === 'form') {
       if (uploadProgress < 100) {
         const interval = setInterval(() => {
           setUploadProgress(prev => Math.min(prev + 1, 100));
-        }, 40);
+        }, 30);
         return () => clearInterval(interval);
       } else {
         const runProcessing = async () => {
           setSdStatus('processing');
-          await new Promise(r => setTimeout(r, 2000));
+          await new Promise(r => setTimeout(r, 1500));
           setSdStatus('done');
           if (qualityInfo.hd) {
             setHdStatus('processing');
-            await new Promise(r => setTimeout(r, 3000));
+            await new Promise(r => setTimeout(r, 2000));
             setHdStatus('done');
           }
           if (qualityInfo.v4k) {
             setV4kStatus('processing');
-            await new Promise(r => setTimeout(r, 4000));
+            await new Promise(r => setTimeout(r, 2500));
             setV4kStatus('done');
           }
         };
@@ -124,23 +124,59 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
   if (!isOpen) return null;
 
   const steps: Step[] = ['Details', 'Merchant Logic', 'Checks', 'Visibility'];
+  const currentIndex = steps.indexOf(currentStep);
+
+  const handlePublishClick = () => {
+    const newVideo: VideoAd = {
+      id: Math.random().toString(36).substr(2, 9),
+      title: title || 'Untitled Signal',
+      brand: { 
+        name: 'My Store', 
+        logo: 'https://picsum.photos/id/64/100/100' 
+      },
+      // IMPORTANT: We use the blob URLs directly for the session
+      thumbnail: thumbnailSrc || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+      videoUrl: videoSrc || '',
+      duration: '00:30',
+      category: visibility === 'public' ? 'New Drops' : 'Private',
+      style: 'Cinematic',
+      ctaText: 'Visit Store',
+      industry: (selectedIndustry as any) || 'Tech',
+      isNewDrop: true
+    };
+    onPublish(newVideo);
+    
+    // Clear state but DO NOT revoke URLs so the main feed can still use them
+    setTitle('');
+    setDescription('');
+    setSelectedIndustry(null);
+    setSelectedFile(null);
+    setVideoSrc(null);
+    setThumbnailSrc(null);
+    setModalStage('selection');
+    setCurrentStep('Details');
+    setCheckStage('pending');
+    setUploadProgress(0);
+    onClose();
+  };
 
   const handleNext = () => {
-    const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1]);
     } else {
-      resetAndClose();
+      handlePublishClick();
     }
   };
 
-  const resetAndClose = () => {
+  const handleCancelAndClose = () => {
+    // Revoking only on manual close/cancel to clear memory
+    if (videoSrc) URL.revokeObjectURL(videoSrc);
+    if (thumbnailSrc) URL.revokeObjectURL(thumbnailSrc);
+    
     setSelectedType(null);
     setModalStage('selection');
     setCurrentStep('Details');
     setSelectedFile(null);
-    if (videoSrc) URL.revokeObjectURL(videoSrc);
-    if (thumbnailSrc) URL.revokeObjectURL(thumbnailSrc);
     setVideoSrc(null);
     setThumbnailSrc(null);
     setUploadError(null);
@@ -151,12 +187,9 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     setSdStatus('pending');
     setHdStatus('pending');
     setV4kStatus('pending');
-    setTechSpecs([{key: '', value: ''}]);
-    setPlatforms([]);
-    setCheckStage('scanning');
+    setCheckStage('pending');
     setHasPermissions(false);
     setScanningProgress(0);
-    setVisibility('public');
     onClose();
   };
 
@@ -169,12 +202,11 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     const video = document.createElement('video');
     const objectUrl = URL.createObjectURL(file);
     video.onloadedmetadata = () => {
-      const duration = video.duration;
       const width = video.videoWidth;
       const height = video.videoHeight;
       const isPortrait = height > width;
 
-      if (duration > 900) {
+      if (video.duration > 900) {
         setUploadError('Exceed recommended length (15m)');
         setIsValidating(false);
       } else if (isPortrait) {
@@ -198,7 +230,6 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      if (thumbnailSrc) URL.revokeObjectURL(thumbnailSrc);
       setThumbnailSrc(URL.createObjectURL(file));
     }
   };
@@ -215,7 +246,7 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
 
   const isNextDisabled = 
     (currentStep === 'Details' && (!thumbnailSrc || title.trim() === '')) ||
-    (currentStep === 'Checks' && (!hasPermissions || checkStage === 'scanning'));
+    (currentStep === 'Checks' && (!hasPermissions || checkStage !== 'results'));
 
   const QualityBadge = ({ label, status, available }: { label: string; status: QualityStatus; available: boolean }) => {
     if (!available) return null;
@@ -234,12 +265,13 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
     );
   };
 
-  const inputClass = "w-full p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:border-accent focus:ring-2 focus:ring-accent/50 outline-none transition-all font-medium placeholder:text-zinc-400";
-  const labelClass = "text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2 block";
-
+  // Define logic for Merchant Specific Forms
   const renderMerchantLogic = () => {
     const sectionTitleClass = "text-sm font-bold mb-6 text-zinc-900 dark:text-white";
-
+    const inputClass = "w-full p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:border-accent outline-none transition-all font-medium";
+    // Fixed missing labelClass definition
+    const labelClass = "text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2 block";
+    
     switch(selectedType) {
       case 'flash':
         return (
@@ -260,18 +292,9 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                   </select>
                 </div>
               </div>
-              <div>
-                <label className={labelClass}>Offer Expiration</label>
-                <input type="datetime-local" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Inventory Limit</label>
-                <input type="number" placeholder="500 units" className={inputClass} />
-              </div>
             </div>
           </div>
         );
-      
       case 'product':
         return (
           <div className="space-y-8">
@@ -317,7 +340,7 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-10">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={resetAndClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={handleCancelAndClose} />
       <div className="relative w-full h-full max-w-6xl bg-white dark:bg-zinc-950 md:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         
         <div className="px-6 py-4 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 z-20">
@@ -326,7 +349,7 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
           </h2>
           <div className="flex items-center gap-4">
              <button className="text-zinc-500 hover:text-yt-textLight dark:hover:text-yt-textDark"><MessageSquare size={20} /></button>
-             <button onClick={resetAndClose} className="text-zinc-500 hover:text-yt-textLight dark:hover:text-yt-textDark"><X size={24} /></button>
+             <button onClick={handleCancelAndClose} className="text-zinc-500 hover:text-yt-textLight dark:hover:text-yt-textDark"><X size={24} /></button>
           </div>
         </div>
 
@@ -336,12 +359,12 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
               {steps.map((step, idx) => (
                 <React.Fragment key={step}>
                   <div className="flex flex-col items-center relative z-10 flex-1">
-                    <div className={`w-6 h-6 rounded-full border-[6px] transition-all duration-300 ${steps.indexOf(currentStep) >= idx ? 'border-zinc-900 dark:border-white bg-white dark:bg-black scale-110' : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900'}`} />
+                    <div className={`w-6 h-6 rounded-full border-[6px] transition-all duration-300 ${currentIndex >= idx ? 'border-zinc-900 dark:border-white bg-white dark:bg-black scale-110' : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900'}`} />
                     <span className={`absolute top-8 text-[11px] font-bold transition-colors ${currentStep === step ? 'text-zinc-900 dark:text-white' : 'text-zinc-400'}`}>{step}</span>
                   </div>
                   {idx < steps.length - 1 && (
                     <div className="flex-grow h-0.5 bg-zinc-200 dark:bg-zinc-800 relative -top-3">
-                      <div className="h-full bg-zinc-400 transition-all duration-500" style={{ width: steps.indexOf(currentStep) > idx ? '100%' : '0%' }} />
+                      <div className="h-full bg-zinc-400 transition-all duration-500" style={{ width: currentIndex > idx ? '100%' : '0%' }} />
                     </div>
                   )}
                 </React.Fragment>
@@ -399,7 +422,6 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                    <div className="space-y-8 animate-in fade-in slide-in-from-left-4">
                      <div className="flex items-center justify-between">
                        <h2 className="text-2xl font-bold font-heading">Details</h2>
-                       <button className="px-4 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs font-bold hover:bg-zinc-200 dark:hover:bg-zinc-700">Reuse details</button>
                      </div>
 
                      <div className="group relative">
@@ -446,20 +468,13 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                          {isIndustryOpen && (
                            <>
                              <div className="fixed inset-0 z-[80]" onClick={() => setIsIndustryOpen(false)} />
-                             <div 
-                               className={`absolute left-0 w-[480px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-[90] p-4 animate-in fade-in zoom-in-95 duration-200 
-                               ${popoverDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'}`}
-                             >
+                             <div className={`absolute left-0 w-[480px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl z-[90] p-4 animate-in fade-in zoom-in-95 duration-200 ${popoverDirection === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
                                <div className="grid grid-cols-3 gap-2">
                                  {INDUSTRIES.map(ind => (
                                    <button 
                                      key={ind}
                                      onClick={() => { setSelectedIndustry(ind); setIsIndustryOpen(false); }}
-                                     className={`text-left px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                                       selectedIndustry === ind 
-                                         ? 'bg-accent text-black' 
-                                         : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
-                                     }`}
+                                     className={`text-left px-3 py-2.5 rounded-lg text-xs font-bold transition-all ${selectedIndustry === ind ? 'bg-accent text-black' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'}`}
                                    >
                                      {ind}
                                    </button>
@@ -494,7 +509,12 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                               </div>
                               <div>
                                 <h4 className="font-bold text-sm">Copyright</h4>
-                                <p className="text-xs text-zinc-500 mt-1">{checkStage === 'scanning' ? 'Scanning audio & video fingerprints...' : 'No issues found.'}</p>
+                                <p className="text-xs text-zinc-500 mt-1">{checkStage === 'scanning' ? `Scanning audio & video fingerprints... ${scanningProgress}%` : 'No issues found.'}</p>
+                                {checkStage === 'scanning' && (
+                                  <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1 mt-3 rounded-full overflow-hidden">
+                                    <div className="bg-accent h-full transition-all duration-300" style={{ width: `${scanningProgress}%` }} />
+                                  </div>
+                                )}
                               </div>
                             </div>
                             {checkStage === 'results' && <span className="text-[10px] font-black uppercase text-green-500 tracking-widest">Passed</span>}
@@ -540,37 +560,52 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
                       <h2 className="text-2xl font-bold font-heading">Visibility</h2>
                       <p className="text-sm text-zinc-500 font-medium -mt-6">Choose when to go live and who can discover your signal.</p>
 
-                      <div className="space-y-3">
-                         {[
-                           { id: 'private', label: 'Private', desc: 'Only you and authorized managers', icon: Lock },
-                           { id: 'unlisted', label: 'Unlisted', desc: 'Only discovered via direct signal link', icon: EyeOff },
-                           { id: 'public', label: 'Public Discovery', desc: 'Anyone can watch and shop your signal', icon: Globe2 },
-                         ].map((opt) => (
-                           <button 
-                             key={opt.id}
-                             onClick={() => setVisibility(opt.id as any)}
-                             className={`w-full flex items-start gap-4 p-5 rounded-2xl border-2 transition-all text-left ${visibility === opt.id ? 'border-accent bg-accent/5' : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-200'}`}
-                           >
-                             <div className={`mt-1 ${visibility === opt.id ? 'text-accent' : 'text-zinc-400'}`}><opt.icon size={20} /></div>
-                             <div>
-                               <div className="text-sm font-bold">{opt.label}</div>
-                               <p className="text-xs text-zinc-500 mt-1">{opt.desc}</p>
-                             </div>
-                           </button>
-                         ))}
-                      </div>
+                      <div className="space-y-4">
+                         <div className="p-6 bg-zinc-50 dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800">
+                           <h3 className="text-sm font-bold mb-4">Save or publish</h3>
+                           <p className="text-xs text-zinc-500 mb-6">Make your signal public, unlisted, or private.</p>
+                           
+                           <div className="space-y-2">
+                             {[
+                               { id: 'private', label: 'Private', desc: 'Only you and authorized managers', icon: Lock },
+                               { id: 'unlisted', label: 'Unlisted', desc: 'Anyone with the link can see', icon: EyeOff },
+                               { id: 'public', label: 'Public', desc: 'Everyone can discover and shop', icon: Globe2 },
+                             ].map((opt) => (
+                               <label 
+                                 key={opt.id}
+                                 className={`flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all border-2 ${visibility === opt.id ? 'border-accent bg-accent/5' : 'border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800/50'}`}
+                               >
+                                 <div className="mt-1">
+                                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${visibility === opt.id ? 'border-accent' : 'border-zinc-400'}`}>
+                                      {visibility === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-accent" />}
+                                   </div>
+                                   <input type="radio" className="hidden" checked={visibility === opt.id} onChange={() => setVisibility(opt.id as any)} />
+                                 </div>
+                                 <div className="flex-grow">
+                                   <div className="flex items-center gap-2">
+                                      <opt.icon size={16} className={visibility === opt.id ? 'text-accent' : 'text-zinc-500'} />
+                                      <span className="text-sm font-bold">{opt.label}</span>
+                                   </div>
+                                   <p className="text-xs text-zinc-500 mt-1">{opt.desc}</p>
+                                 </div>
+                               </label>
+                             ))}
+                           </div>
+                         </div>
 
-                      <div className="pt-6 border-t border-zinc-100 dark:border-zinc-800">
-                         <h3 className="text-sm font-bold mb-4">Schedule Launch</h3>
-                         <button className="flex items-center gap-3 px-6 py-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-500">
-                           <Clock size={16} /> Set discovery date & time
-                         </button>
+                         <div className="p-6 bg-zinc-50 dark:bg-zinc-900 rounded-3xl border border-zinc-100 dark:border-zinc-800">
+                            <h3 className="text-sm font-bold mb-4">Schedule</h3>
+                            <p className="text-xs text-zinc-500 mb-4">Select a date to make your video public.</p>
+                            <button className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-500 hover:border-accent transition-all">
+                              <Clock size={16} /> Schedule Launch
+                            </button>
+                         </div>
                       </div>
                    </div>
                  )}
                </div>
 
-               {currentStep === 'Details' && (
+               {currentIndex === 0 && (
                  <div className="w-full lg:w-96 flex-shrink-0">
                    <div className="sticky top-0 bg-zinc-50 dark:bg-zinc-900/30 rounded-xl overflow-hidden border border-zinc-100 dark:border-zinc-800 shadow-sm">
                      <div className="aspect-video bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center relative">
@@ -609,8 +644,12 @@ const CreateModal = ({ isOpen, onClose }: CreateModalProps) => {
             </div>
             
             <div className="flex gap-3">
-               <button onClick={() => { const idx = steps.indexOf(currentStep); if (idx > 0) setCurrentStep(steps[idx-1]); else setModalStage('upload'); }} className="px-6 py-2 rounded-sm text-sm font-bold border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors uppercase">Back</button>
-               <button onClick={handleNext} disabled={isNextDisabled} className={`px-8 py-2 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-sm text-sm font-bold shadow-lg uppercase transition-all ${isNextDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90 active:scale-95'}`}>Next</button>
+               {currentIndex > 0 && (
+                 <button onClick={() => setCurrentStep(steps[currentIndex-1])} className="px-6 py-2 rounded-sm text-sm font-bold border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors uppercase">Back</button>
+               )}
+               <button onClick={handleNext} disabled={isNextDisabled} className={`px-8 py-2 bg-zinc-900 dark:bg-white text-white dark:text-black rounded-sm text-sm font-bold shadow-lg uppercase transition-all ${isNextDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90 active:scale-95'}`}>
+                 {currentIndex === steps.length - 1 ? 'Publish' : 'Next'}
+               </button>
             </div>
           </div>
         )}

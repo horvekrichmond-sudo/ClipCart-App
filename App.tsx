@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { useState, useMemo } from 'react';
 import { MapPin, Wallet, Zap, Sparkles, Ticket } from 'lucide-react';
@@ -12,13 +11,14 @@ import { MOCK_VIDEOS } from './constants';
 import { Tab, Category, VideoAd } from './types';
 
 const App = () => {
+  const [allVideos, setAllVideos] = useState<VideoAd[]>(MOCK_VIDEOS);
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const filteredVideos = useMemo(() => {
-    let result = [...MOCK_VIDEOS];
+    let result = [...allVideos];
 
     if (selectedCategory === 'All') return result;
 
@@ -42,7 +42,7 @@ const App = () => {
       default:
         return result;
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, allVideos]);
 
   const handleVideoClick = (id: string) => {
     setSelectedVideoId(id);
@@ -56,14 +56,19 @@ const App = () => {
   };
 
   const selectedVideo = useMemo(() => 
-    MOCK_VIDEOS.find(v => v.id === selectedVideoId), 
-  [selectedVideoId]);
+    allVideos.find(v => v.id === selectedVideoId), 
+  [selectedVideoId, allVideos]);
 
   const relatedVideos = useMemo(() => 
-    MOCK_VIDEOS.filter(v => v.id !== selectedVideoId), 
-  [selectedVideoId]);
+    allVideos.filter(v => v.id !== selectedVideoId), 
+  [selectedVideoId, allVideos]);
 
   const handleReset = () => setSelectedCategory('All');
+
+  const handlePublish = (newVideo: VideoAd) => {
+    setAllVideos(prev => [newVideo, ...prev]);
+    setActiveTab('home');
+  };
 
   return (
     <>
@@ -183,6 +188,7 @@ const App = () => {
       <CreateModal 
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)} 
+        onPublish={handlePublish}
       />
     </>
   );
