@@ -301,7 +301,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                 {video.title}
               </h1>
               
-              {/* MOBILE ONLY METADATA STACK */}
+              {/* MOBILE ONLY METADATA STACK (Name + Trackers already here) */}
               <div className="flex md:hidden flex-wrap items-center gap-x-2 gap-y-1 text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">
                 <span className="text-zinc-900 dark:text-zinc-100">{video.brand.name}</span>
                 <span className="text-zinc-200 dark:text-zinc-800">•</span>
@@ -322,13 +322,14 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                   <div className="w-10 h-10 md:w-11 md:h-11 rounded-full overflow-hidden border-2 border-accent bg-white dark:bg-zinc-900 flex-shrink-0">
                     <img src={video.brand.logo} alt={video.brand.name} className="w-full h-full object-cover" />
                   </div>
-                  <div className="flex flex-col justify-center min-w-0 mr-1 md:mr-3">
+                  {/* Brand Name + Trackers: Hidden on mobile (md:flex only) because it's in the stack above */}
+                  <div className="hidden md:flex flex-col justify-center min-w-0 mr-1 md:mr-3">
                     <div className="flex items-center gap-1 min-w-0">
                       <span className="text-yt-textLight dark:text-yt-textDark font-black text-sm md:text-base font-heading tracking-tight truncate leading-tight">{video.brand.name}</span>
                       <CheckCircle2 size={14} strokeWidth={3} className="text-accent flex-shrink-0" />
                     </div>
                     {/* Desktop only Tracker count: Under the name */}
-                    <span className="hidden md:block text-[11px] font-bold text-zinc-500 tracking-tight leading-tight">124K trackers</span>
+                    <span className="text-[11px] font-bold text-zinc-500 tracking-tight leading-tight">124K trackers</span>
                   </div>
                   {/* Track Button (Like Subscribe) */}
                   <button 
