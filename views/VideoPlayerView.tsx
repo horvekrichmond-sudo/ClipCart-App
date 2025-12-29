@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { VideoAd } from '../types';
 import { useTimer } from '../hooks/useTimer';
+import VideoCard from '../components/VideoCard';
 
 interface VideoPlayerViewProps {
   video: VideoAd;
@@ -166,8 +167,8 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
     </div>
   );
 
-  // Base button styles for the horizontal scroll row
-  const actionBtnClass = "flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-[11px] transition-all active:scale-95 whitespace-nowrap bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 h-[32px] md:h-[36px] flex-shrink-0 text-zinc-700 dark:text-zinc-300";
+  // Action button class for standard buttons
+  const actionBtnClass = "flex items-center justify-center gap-1.5 px-4 py-2 rounded-full font-bold text-[12px] md:text-[13px] transition-all active:scale-95 whitespace-nowrap bg-zinc-100 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700 h-[36px] md:h-[38px] flex-shrink-0 text-yt-textLight dark:text-yt-textDark";
 
   return (
     <div className={`w-full animate-in fade-in duration-500 relative bg-white dark:bg-yt-dark min-h-screen ${isTheaterMode ? 'pt-0' : ''}`}>
@@ -179,7 +180,7 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
             <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[110]" onClick={() => setIsRatingOpen(false)} />
             <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-950 z-[120] rounded-t-[40px] px-8 pt-10 pb-12 animate-in slide-in-from-bottom duration-300 shadow-[0_-20px_50px_rgba(0,0,0,0.3)]">
               <div className="w-12 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full mx-auto mb-8" />
-              <h3 className="text-xl font-black uppercase font-heading text-center mb-10 tracking-tight">How's the Signal?</h3>
+              <h3 className="text-xl font-black uppercase font-heading text-center mb-10 tracking-tight text-yt-textLight dark:text-yt-textDark">How's the Signal?</h3>
               <RatingEmojis />
               <button 
                 onClick={() => setIsRatingOpen(false)}
@@ -295,13 +296,13 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
           {/* MAIN CONTENT AREA */}
           <div className={`mt-0 py-4 relative bg-white dark:bg-yt-dark ${isTheaterMode ? 'max-w-5xl mx-auto' : ''}`}>
             {/* Title Section */}
-            <div className="px-4 md:px-0 flex flex-col gap-0.5 mb-5">
+            <div className="px-4 md:px-0 flex flex-col gap-0.5 mb-3">
               <h1 className="text-lg md:text-2xl font-bold text-yt-textLight dark:text-yt-textDark leading-tight tracking-tight font-heading">
                 {video.title}
               </h1>
               
-              {/* BRAND + MERCHANT INFO - Unified Mobile Metadata */}
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] md:text-[11px] font-black text-zinc-500 uppercase tracking-widest mt-0.5">
+              {/* MOBILE ONLY METADATA STACK */}
+              <div className="flex md:hidden flex-wrap items-center gap-x-2 gap-y-1 text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1">
                 <span className="text-zinc-900 dark:text-zinc-100">{video.brand.name}</span>
                 <span className="text-zinc-200 dark:text-zinc-800">•</span>
                 <span className="text-zinc-400">124K Trackers</span>
@@ -309,100 +310,103 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                 <span className="flex items-center gap-1">
                   <ShieldCheck size={10} className="text-accent" /> Verified
                 </span>
-                <span className="text-zinc-200 dark:text-zinc-800">•</span>
-                <span className="flex items-center gap-1 text-zinc-400/80">
-                  <Info size={10} /> &lt; 15m Response
-                </span>
               </div>
             </div>
 
-            {/* UNIFIED ACTION ROW (HORIZONTAL SCROLL ON MOBILE) */}
-            <div className="w-full overflow-x-auto scrollbar-hide border-b border-zinc-100 dark:border-zinc-800 pb-4">
-              <div className="flex items-center gap-3 px-4 min-w-max">
+            {/* YOUTUBE STYLE ACTION BAR */}
+            <div className="w-full overflow-x-auto scrollbar-hide md:overflow-visible pb-4">
+              <div className="flex items-center gap-3 px-4 md:px-0 min-w-max md:min-w-0 w-full">
                 
-                {/* Brand Avatar (Desktop name hidden, name moved to metadata on mobile) */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="w-8 h-8 md:w-11 md:h-11 rounded-full overflow-hidden border-2 border-accent bg-white dark:bg-zinc-900 flex-shrink-0">
+                {/* BRAND IDENTITY (LEFT) */}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="w-10 h-10 md:w-11 md:h-11 rounded-full overflow-hidden border-2 border-accent bg-white dark:bg-zinc-900 flex-shrink-0">
                     <img src={video.brand.logo} alt={video.brand.name} className="w-full h-full object-cover" />
                   </div>
-                  <div className="hidden md:flex flex-col justify-center max-w-[100px]">
+                  <div className="flex flex-col justify-center min-w-0 mr-1 md:mr-3">
                     <div className="flex items-center gap-1 min-w-0">
-                      <span className="text-yt-textLight dark:text-yt-textDark font-black text-sm font-heading tracking-tight truncate">{video.brand.name}</span>
-                      <CheckCircle2 size={12} strokeWidth={3} className="text-accent flex-shrink-0" />
+                      <span className="text-yt-textLight dark:text-yt-textDark font-black text-sm md:text-base font-heading tracking-tight truncate leading-tight">{video.brand.name}</span>
+                      <CheckCircle2 size={14} strokeWidth={3} className="text-accent flex-shrink-0" />
                     </div>
+                    {/* Desktop only Tracker count: Under the name */}
+                    <span className="hidden md:block text-[11px] font-bold text-zinc-500 tracking-tight leading-tight">124K trackers</span>
                   </div>
+                  {/* Track Button (Like Subscribe) */}
+                  <button 
+                    onClick={handleTrackToggle}
+                    className={`flex-shrink-0 h-[36px] md:h-[38px] flex items-center justify-center px-5 rounded-full font-bold text-[12px] md:text-[13px] transition-all active:scale-95 ${
+                      isTracked 
+                      ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500' 
+                      : 'bg-black dark:bg-white text-white dark:text-black shadow-md'
+                    }`}
+                  >
+                    {isTracked ? 'Tracked' : 'Track Brand'}
+                  </button>
                 </div>
 
-                {/* Track Button */}
-                <button 
-                  onClick={handleTrackToggle}
-                  className={`flex-shrink-0 h-[32px] md:h-[36px] flex items-center justify-center px-4 rounded-full font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all active:scale-95 ${
-                    isTracked 
-                    ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500' 
-                    : 'bg-black dark:bg-white text-white dark:text-black shadow-md'
-                  }`}
-                >
-                  {isTracked ? 'Tracked' : 'Track Brand'}
-                </button>
+                {/* FLEX SPACER (DESKTOP) */}
+                <div className="hidden md:block flex-grow" />
 
-                {/* Rate Button - Shows Rating, Opens Responsive Menu */}
-                <div className="relative flex-shrink-0" ref={ratingRef}>
-                  <button 
-                    onClick={() => setIsRatingOpen(!isRatingOpen)}
-                    className={actionBtnClass}
-                  >
-                    <Star size={14} strokeWidth={2.5} fill="#ffba08" className="text-accent" />
-                    <span>4.9</span>
+                {/* INTERACTION TOOLS (RIGHT ON DESKTOP) */}
+                <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+                  {/* Rate Button */}
+                  <div className="relative flex-shrink-0" ref={ratingRef}>
+                    <button 
+                      onClick={() => setIsRatingOpen(!isRatingOpen)}
+                      className={actionBtnClass}
+                    >
+                      <Star size={16} strokeWidth={2.5} fill="#ffba08" className="text-accent" />
+                      <span>4.9</span>
+                    </button>
+
+                    {/* DESKTOP POPOVER */}
+                    {isRatingOpen && (
+                      <div className="hidden md:block absolute bottom-full right-0 mb-3 z-50 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-zinc-200 dark:border-zinc-800 shadow-2xl min-w-[340px]">
+                           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-6 text-center">Rate this Signal</h4>
+                           <RatingEmojis />
+                           <div className="absolute top-full right-6 -mt-1 w-3 h-3 bg-white dark:bg-zinc-900 border-r border-b border-zinc-200 dark:border-zinc-800 rotate-45" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <button className={actionBtnClass}>
+                    <MessageCircle size={16} strokeWidth={2.5} />
+                    <span>Ask</span>
                   </button>
 
-                  {/* DESKTOP POPOVER */}
-                  {isRatingOpen && (
-                    <div className="hidden md:block absolute bottom-full left-0 mb-3 z-50 animate-in fade-in zoom-in-95 duration-200">
-                      <div className="bg-white dark:bg-zinc-900 p-6 rounded-[24px] border border-zinc-200 dark:border-zinc-800 shadow-2xl min-w-[340px]">
-                         <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-6 text-center">Rate this Signal</h4>
-                         <RatingEmojis />
-                         <div className="absolute top-full left-6 -mt-1 w-3 h-3 bg-white dark:bg-zinc-900 border-r border-b border-zinc-200 dark:border-zinc-800 rotate-45" />
-                      </div>
-                    </div>
-                  )}
+                  <button className={actionBtnClass}>
+                    <Share2 size={16} strokeWidth={2.5} />
+                    <span>Share</span>
+                  </button>
+
+                  <button 
+                    onClick={() => setIsClipped(!isClipped)}
+                    className={`${actionBtnClass} ${isClipped ? 'bg-accent/10 border-accent/30 text-accent' : ''}`}
+                  >
+                    <Bookmark size={16} strokeWidth={2.5} fill={isClipped ? "currentColor" : "none"} />
+                    <span>{isClipped ? 'Saved' : 'Clip'}</span>
+                  </button>
+
+                  <button className={`${actionBtnClass} hidden sm:flex`}>
+                    <Info size={16} strokeWidth={2.5} />
+                    <span>Details</span>
+                  </button>
                 </div>
-
-                <button className={actionBtnClass}>
-                  <MessageCircle size={14} strokeWidth={2.5} />
-                  <span>Ask</span>
-                </button>
-
-                <button className={actionBtnClass}>
-                  <Share2 size={14} strokeWidth={2.5} />
-                  <span>Share</span>
-                </button>
-
-                <button 
-                  onClick={() => setIsClipped(!isClipped)}
-                  className={`${actionBtnClass} ${isClipped ? 'bg-accent/10 border-accent/30 text-accent' : ''}`}
-                >
-                  <Bookmark size={14} strokeWidth={2.5} fill={isClipped ? "currentColor" : "none"} />
-                  <span>{isClipped ? 'Saved' : 'Clip'}</span>
-                </button>
-
-                <button className={actionBtnClass}>
-                  <Info size={14} strokeWidth={2.5} />
-                  <span>Details</span>
-                </button>
               </div>
             </div>
 
-            {/* BANNERS: Clean white theme applied */}
-            <div className="mt-6 space-y-4 px-4 md:px-0">
+            {/* BANNERS: Clean aesthetic commerce tools */}
+            <div className="mt-4 space-y-4 px-4 md:px-0">
               {(video.category === 'Flash Deals' || video.hasCoupon) && (
-                <div className="bg-gradient-to-r from-accent/5 to-transparent p-5 rounded-2xl border border-accent/20">
+                <div className="bg-zinc-50 dark:bg-zinc-900/40 p-5 rounded-[24px] border border-zinc-100 dark:border-zinc-800">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex gap-4 items-center">
-                      <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-black shadow-xl">
+                      <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-black shadow-lg">
                         <Sparkles size={20} strokeWidth={3} />
                       </div>
                       <div>
-                        <h3 className="text-base font-black uppercase font-heading tracking-tight leading-none">Active Promo: 20% OFF</h3>
+                        <h3 className="text-base font-black uppercase font-heading tracking-tight leading-none text-yt-textLight dark:text-yt-textDark">Active Promo: 20% OFF</h3>
                         <p className="text-[11px] font-bold text-zinc-500 tabular-nums mt-1">Claim within {timer} • One per user</p>
                       </div>
                     </div>
@@ -420,14 +424,14 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               )}
 
               {video.location && (
-                <div className="bg-white dark:bg-zinc-900/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                <div className="bg-white dark:bg-zinc-900/50 p-5 rounded-[24px] border border-zinc-100 dark:border-zinc-800">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex gap-4">
-                      <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-xl">
+                      <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg">
                         <MapPin size={20} strokeWidth={3} />
                       </div>
                       <div>
-                        <h3 className="text-base font-black uppercase font-heading tracking-tight leading-none">Near You: {video.location}</h3>
+                        <h3 className="text-base font-black uppercase font-heading tracking-tight leading-none text-yt-textLight dark:text-yt-textDark">Near You: {video.location}</h3>
                         <p className="text-[11px] font-bold text-zinc-500 mt-1">Available for in-person demo today</p>
                       </div>
                     </div>
@@ -442,86 +446,77 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
                   </div>
                 </div>
               )}
-
-              {video.specs && (
-                <div className="bg-white dark:bg-zinc-900/50 p-5 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                   <div className="flex items-center gap-3 mb-4">
-                      <Cpu size={18} className="text-accent" strokeWidth={3} />
-                      <h3 className="text-xs font-black uppercase font-heading tracking-wider">Technical Specifications</h3>
-                   </div>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                      {video.specs.map(spec => (
-                        <div key={spec} className="bg-white dark:bg-zinc-800 px-3 py-2 rounded-xl text-[11px] font-bold border border-zinc-100 dark:border-zinc-700 flex items-center justify-between">
-                          <span className="text-zinc-700 dark:text-zinc-300">{spec}</span>
-                          <Check size={10} className="text-green-500" strokeWidth={3} />
-                        </div>
-                      ))}
-                   </div>
-                </div>
-              )}
             </div>
 
-            {/* DESCRIPTION */}
-            <div className="mt-8 px-4 md:px-0">
+            {/* DESCRIPTION BOX: Reimagined as "Campaign Details" */}
+            <div className="mt-6 px-4 md:px-0">
               <div 
-                className="p-5 bg-white dark:bg-zinc-900/30 rounded-2xl cursor-pointer group border border-zinc-100 dark:border-zinc-800 transition-all" 
+                className="p-5 bg-zinc-50 dark:bg-zinc-900/30 rounded-[24px] border border-zinc-100 dark:border-zinc-800 transition-all cursor-pointer" 
                 onClick={() => setShowDescription(!showDescription)}
               >
-                <div className="flex flex-col">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                      <span>Campaign Details</span>
-                      <span>•</span>
-                      <span>Official ID: #{video.id}829</span>
-                    </div>
-                    <ChevronDown className={`transition-transform duration-300 ${showDescription ? 'rotate-180' : ''}`} />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                    <span className="text-yt-textLight dark:text-yt-textDark">Details</span>
+                    <span>•</span>
+                    <span>#CC-{video.id}829</span>
                   </div>
-                  <div className={`text-sm leading-relaxed font-medium text-zinc-600 dark:text-zinc-400 ${showDescription ? '' : 'line-clamp-2'}`}>
-                    Experience the official {video.brand.name} {video.industry} premiere. This technical showcase highlights our latest innovations in high-performance {video.industry} design.
-                    {showDescription && (
-                      <div className="mt-6 space-y-6 animate-in slide-in-from-top-4 duration-300">
-                        <div>
-                          <h4 className="font-black uppercase text-[11px] tracking-widest text-zinc-500 mb-2">Merchant Guarantee</h4>
-                          <p>All items featured in this Clip are 100% authentic and eligible for Brand Wallet warranty protection. Tracking the brand provides instant notifications for limited restocks.</p>
-                        </div>
-                        <div className="flex flex-col gap-3">
-                          <button className="w-full flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-100 dark:border-zinc-700 group/link">
-                            <span className="font-bold text-sm">Full Product Catalog</span>
-                            <Plus size={16} className="text-accent group-hover/link:rotate-90 transition-transform" />
-                          </button>
-                        </div>
+                  <ChevronDown className={`transition-transform duration-300 text-zinc-400 ${showDescription ? 'rotate-180' : ''}`} />
+                </div>
+                <div className={`text-sm leading-relaxed font-medium text-zinc-600 dark:text-zinc-400 ${showDescription ? '' : 'line-clamp-2'}`}>
+                  Experience the official {video.brand.name} {video.industry} premiere. This technical showcase highlights our latest innovations in high-performance {video.industry} design. 
+                  {showDescription && (
+                    <div className="mt-6 space-y-6 animate-in slide-in-from-top-4 duration-300">
+                      <div>
+                        <h4 className="font-black uppercase text-[11px] tracking-widest text-zinc-500 mb-2">Merchant Guarantee</h4>
+                        <p>All items featured in this Clip are 100% authentic and eligible for Brand Wallet warranty protection. Tracking the brand provides instant notifications for limited restocks.</p>
                       </div>
-                    )}
-                  </div>
+                      <button className="w-full flex items-center justify-between p-4 bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-100 dark:border-zinc-700 group/link">
+                        <span className="font-bold text-sm text-yt-textLight dark:text-yt-textDark">Full Product Catalog</span>
+                        <Plus size={16} className="text-accent group-hover/link:rotate-90 transition-transform" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* RELATED VIDEOS SECTION */}
-        <div className={`w-full ${isTheaterMode ? 'w-full px-4' : 'lg:w-[400px] xl:w-[450px] px-4 md:px-0'} flex-shrink-0 flex flex-col gap-6 mt-6 lg:mt-0 relative z-10 bg-white dark:bg-yt-dark`}>
-          <div className="flex flex-col gap-4">
-            <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 px-2">Related Signals</h4>
-            <div className={`grid ${isTheaterMode ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'} gap-4 pb-12`}>
+        {/* SIDEBAR: RELATED SIGNALS (Feed Card Style) */}
+        <div className={`w-full ${isTheaterMode ? 'w-full px-4' : 'lg:w-[380px] xl:w-[420px] px-4 md:px-0'} flex-shrink-0 flex flex-col gap-6 mt-8 lg:mt-0 relative z-10 bg-white dark:bg-yt-dark`}>
+          <div className="flex flex-col gap-5">
+            <h4 className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 px-1">Recommended Signals</h4>
+            <div className={`grid ${isTheaterMode ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'} gap-6 pb-20`}>
               {relatedVideos.map((rv) => (
                 <div 
                   key={rv.id} 
                   onClick={() => onVideoClick(rv.id)}
-                  className="flex gap-4 group cursor-pointer px-0"
+                  className="group cursor-pointer flex flex-col gap-3"
                 >
-                  <div className="relative w-36 md:w-40 h-20 md:h-24 flex-shrink-0 bg-zinc-50 dark:bg-zinc-900 rounded-xl md:rounded-2xl overflow-hidden border-2 border-transparent group-hover:border-accent transition-all shadow-sm">
-                    <img src={rv.thumbnail} alt={rv.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                    <div className="absolute bottom-1.5 right-1.5 px-1 py-0.5 rounded bg-black/80 text-[9px] font-bold text-white font-heading">{rv.duration}</div>
+                  <div className="relative aspect-video bg-zinc-100 dark:bg-zinc-900 rounded-[18px] overflow-hidden transition-all duration-300 shadow-sm group-hover:shadow-lg">
+                    <img 
+                      src={rv.thumbnail} 
+                      alt={rv.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                    />
+                    <div className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/80 text-[10px] font-bold text-white font-heading">
+                      {rv.duration}
+                    </div>
                   </div>
-                  <div className="flex flex-col justify-center min-w-0">
-                    <h4 className="text-yt-textLight dark:text-yt-textDark text-xs md:text-sm font-bold line-clamp-2 leading-tight font-heading group-hover:text-accent transition-colors tracking-tight">
-                      {rv.title}
-                    </h4>
-                    <div className="flex flex-col mt-1">
-                      <div className="flex items-center gap-1">
-                        <span className="text-zinc-500 text-[11px] md:text-xs font-bold truncate">{rv.brand.name}</span>
-                        <CheckCircle2 size={10} strokeWidth={3} className="text-accent" />
+                  <div className="flex gap-3 px-1">
+                    <div className="w-9 h-9 rounded-full overflow-hidden border border-zinc-100 dark:border-zinc-800 flex-shrink-0">
+                      <img src={rv.brand.logo} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <h4 className="text-yt-textLight dark:text-yt-textDark text-[13px] font-bold line-clamp-2 leading-snug font-heading group-hover:text-accent transition-colors tracking-tight">
+                        {rv.title}
+                      </h4>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-zinc-500 text-[11px] font-bold truncate">{rv.brand.name}</span>
+                        <CheckCircle2 size={10} strokeWidth={3} className="text-accent flex-shrink-0" />
+                      </div>
+                      <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">
+                        {rv.industry} • 2.4M Views
                       </div>
                     </div>
                   </div>
@@ -529,7 +524,6 @@ const VideoPlayerView = ({ video, onBack, relatedVideos, onVideoClick }: VideoPl
               ))}
             </div>
           </div>
-          <div className="h-20 lg:hidden" />
         </div>
       </div>
     </div>
